@@ -6,6 +6,8 @@ import finetune
 from omegaconf import OmegaConf
 from enum import Enum
 
+import pickle
+
 class Task(Enum):
     INFERENCE = 1,
     FINETUNE = 2,
@@ -13,8 +15,20 @@ class Task(Enum):
 def run_finetune():
     pass
 
-def run_inference():
-    pass
+def run_inference(config, pl, test_dataset):
+    preds_df = evaluate.make_preds(
+        config=config,
+        pl=pl,
+        test_dataset=test_dataset,
+    )
+
+    path = config.evaluation_config.dump_path
+
+    with open(path, 'wb') as f:
+        pickle.dump(
+            preds_df,
+            file=f,
+        )
 
 def run_tasks(config):
     tasks = config.tasks
