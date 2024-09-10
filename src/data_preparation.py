@@ -58,6 +58,7 @@ def _remove_answer(example):
 
 def load_MMLU(config, tokenizer) -> DatasetDict:
     mmlu_dataset =  load_dataset("cais/mmlu", config.task_name)
+    loader_config = config.loader_config
 
     few_shot_datasets = {
         subject: mmlu_dataset['dev'].filter(lambda row: row['subject'] == subject)
@@ -72,7 +73,7 @@ def load_MMLU(config, tokenizer) -> DatasetDict:
             few_shot_datasets=few_shot_datasets,
         ),
         batched=False, 
-        num_proc=2
+        num_proc=loader_config.num_proc,
     )
 
     instructions_datasets['validation'] = instructions_datasets['validation'].map(

@@ -10,7 +10,7 @@ from omegaconf import OmegaConf
 import tqdm.notebook as tqdm
 
 import categories
-import model
+import model_loader
 
 
 def _inference_model(eval_cfg, pl, test_dataset):
