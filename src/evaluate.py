@@ -1,43 +1,25 @@
 import numpy as np
 import pandas as pd
-import scipy
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 import torch
 from torch import nn
 import torch.nn.functional as F
 
-import transformers
-from transformers import AutoModel, AutoTokenizer, AutoModelForSequenceClassification, AutoModelForCausalLM, AutoModelForSeq2SeqLM, BertTokenizer, BertModel 
-from transformers import TrainingArguments, Trainer, Seq2SeqTrainingArguments, Seq2SeqTrainer, GenerationConfig, DataCollatorWithPadding
-from transformers import pipeline
-from peft import BOFTConfig, get_peft_model, LoraConfig, TaskType
-from datasets import load_dataset
-import evaluate
-from trl import SFTConfig, SFTTrainer, DataCollatorForCompletionOnlyLM
-
-import wandb
 from omegaconf import OmegaConf
 
-import pickle
 import tqdm.notebook as tqdm
 
-
-from metrics import compute_accuracy
+import categories
 import model
 
 
-def make_preds(config, pl, test_dataset):
+def _inference_model(eval_cfg, pl, test_dataset):
     model_preds = []
-    eval_cfg = config.evaluation_config
-    num_splits = eval_cfg.num_splits
 
-
-    with torch.no_grad():
+    with torch.inference_mode():
         for i, split in tqdm.tqdm(
-            enumerate(np.array_split(np.arange(len(test_dataset)), num_splits)),
-            total=num_splits,
+            enumerate(np.array_split(np.arange(len(test_dataset)), eval_cfg.num_splits)),
+            total=eval_cfg.num_splits,
         ):            
             model_pred = pl(
                 test_dataset.select(split)['text_wa_answer'],
@@ -57,9 +39,37 @@ def make_preds(config, pl, test_dataset):
     for ls in model_preds:
         model_preds_merged += ls
 
-    model_preds = model_preds_merged
+    return model_preds_merged
 
-    for i in range(len(model_preds)):
-        model_preds[i]['subject'] = test_dataset[i]['subject']
 
-    return model_preds
+def _process_prediction(pred):
+    pred = pred['generated_text']
+    
+    pred = pred.strip().upper()
+    
+    pred = pred[0] if pred else 'I'
+    pred = pred if pred in {'A', 'B', 'C', 'D'} else 'I'
+    
+    return pred
+
+
+def _preds_to_df(model_preds, test_dataset):
+    preds_df = pd.DataFrame(model_preds)
+
+    preds_df['subject'] = test_dataset['subject']
+    preds_df['pred'] = preds_df.apply(_process_prediction, axis=1)
+    preds_df['true'] = list(map(lambda v: chr(v + ord('A')), test_dataset['answer']))
+    preds_df['corr'] = (preds_df['pred'] == preds_df['true']).astype(np.int32)
+    preds_df['category'] = preds_df['subject'].apply(categories.subcat_to_cat.__getitem__)
+
+    return preds_df
+
+
+def make_preds(config, pl, test_dataset):
+    eval_cfg = config.evaluation_config
+    
+    model_preds = _inference_model(eval_cfg, pl, test_dataset)
+
+    preds_df = _preds_to_df(model_preds, test_dataset)
+
+    return preds_df
