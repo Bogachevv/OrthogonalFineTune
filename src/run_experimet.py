@@ -12,8 +12,12 @@ class Task(Enum):
     INFERENCE = 1,
     FINETUNE = 2,
 
-def run_finetune():
-    pass
+def run_finetune(config, model, tokenizer, train_dataset, val_dataset):
+    trainer = finetune.get_trainer(config, model, tokenizer, train_dataset, val_dataset)
+    trainer.train()
+
+    model.save_pretrained("./fine_tuned_model")
+    tokenizer.save_pretrained("./fine_tuned_model")
 
 def run_inference(config, pl, test_dataset):
     preds_df = evaluate.make_preds(
@@ -45,7 +49,7 @@ def run_tasks(config):
 
     for task in tasks:
         if task is Task.INFERENCE:
-            pass
+            run_inference(config, pl, test_dataset)
         elif task is Task.FINETUNE:
             pass
         else:
