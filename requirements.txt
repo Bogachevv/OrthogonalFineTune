@@ -1,0 +1,7 @@
+transformers
+peft
+datasets
+evaluate
+huggingface_hub
+trl
+omegaconf
