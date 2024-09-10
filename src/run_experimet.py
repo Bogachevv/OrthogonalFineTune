@@ -19,7 +19,7 @@ def run_finetune(config, model, tokenizer, train_dataset, val_dataset):
     model.save_pretrained("./fine_tuned_model")
     tokenizer.save_pretrained("./fine_tuned_model")
 
-def run_inference(config, pl, test_dataset):
+def run_inference(config, pl, test_dataset, task_idx=None):
     preds_df = evaluate.make_preds(
         config=config,
         pl=pl,
@@ -27,6 +27,8 @@ def run_inference(config, pl, test_dataset):
     )
 
     path = config.evaluation_config.dump_path
+    task_idx = 0 if task_idx is None else task_idx
+    path = path.format(task_idx)
 
     with open(path, 'wb') as f:
         pickle.dump(
@@ -51,8 +53,8 @@ def run_tasks(config):
         if task is Task.INFERENCE:
             run_inference(config, pl, test_dataset)
         elif task is Task.FINETUNE:
-            pass
-        else:
+            run_finetune()
+        else:            
             raise ValueError(f'Incorrect value of {task=}\ntask must be instance of Task enum')
 
 
@@ -81,7 +83,7 @@ def main():
             'max_new_tokens': 4,
             'batch_size': 1,
             'empty_cache': True,
-            'dump_path': './preds.bin',
+            'dump_path': './preds_{0}.bin',
         },
         'trainer_config': {
             'output_dir': "bogachevv/Llama-3-8b-MMLU",

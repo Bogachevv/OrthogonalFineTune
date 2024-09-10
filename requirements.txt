@@ -5,3 +5,4 @@ evaluate
 huggingface_hub
 trl
 omegaconf
+wandb
