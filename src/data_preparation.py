@@ -67,7 +67,7 @@ def load_MMLU(config, tokenizer) -> DatasetDict:
 
     instructions_datasets = mmlu_dataset.map(
         function=functools.partial(
-            func=_prepare_instruction_text,
+            _prepare_instruction_text,
             tokenizer=tokenizer,
             config=config,
             few_shot_datasets=few_shot_datasets,

@@ -1,6 +1,6 @@
 import model_loader
 import data_preparation
-import evaluate
+import eval
 import finetune
 
 from omegaconf import OmegaConf
@@ -20,7 +20,7 @@ def run_finetune(config, model, tokenizer, train_dataset, val_dataset):
     tokenizer.save_pretrained("./fine_tuned_model")
 
 def run_inference(config, pl, test_dataset, task_idx=None):
-    preds_df = evaluate.make_preds(
+    preds_df = eval.make_preds(
         config=config,
         pl=pl,
         test_dataset=test_dataset,
@@ -49,11 +49,11 @@ def run_tasks(config):
     test_dataset = dataset["test"]
     train_dataset  = dataset['auxiliary_train']
 
-    for task in tasks:
+    for i, task in enumerate(tasks):
         if task is Task.INFERENCE:
-            run_inference(config, pl, test_dataset)
+            run_inference(config, pl, test_dataset, task_idx=i)
         elif task is Task.FINETUNE:
-            run_finetune()
+            run_finetune(config, model, tokenizer, train_dataset, validation_dataset)
         else:            
             raise ValueError(f'Incorrect value of {task=}\ntask must be instance of Task enum')
 
