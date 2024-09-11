@@ -42,7 +42,6 @@ def run_tasks(config):
     tokenizer = model_loader.load_tokenizer(config)
     model = model_loader.load_model(config)
     model = model_loader.get_peft(config, model)
-    pl = model_loader.get_pipeline(config, model, tokenizer)
 
     dataset = data_preparation.load_MMLU(config, tokenizer)
     validation_dataset = dataset["validation"]
@@ -51,6 +50,7 @@ def run_tasks(config):
 
     for i, task in enumerate(tasks):
         if task is Task.INFERENCE:
+            pl = model_loader.get_pipeline(config, model, tokenizer)
             run_inference(config, pl, test_dataset, task_idx=i)
         elif task is Task.FINETUNE:
             run_finetune(config, model, tokenizer, train_dataset, validation_dataset)
@@ -66,7 +66,7 @@ def main():
         'padding_side': 'left',
         'task_name':    'all',
         'max_length':   256,
-        'n_shots': 2,
+        'n_shots': 0,
         'fp16': True,
         'bf16': False,
         'loader_config': {
@@ -81,7 +81,7 @@ def main():
         'evaluation_config':{
             'num_splits': 20,
             'max_new_tokens': 4,
-            'batch_size': 1,
+            'batch_size': 32,
             'empty_cache': True,
             'dump_path': './preds_{0}.bin',
         },
@@ -91,9 +91,9 @@ def main():
             'dataset_text_field': 'text',
             'fp16': True,
             'full_determinism': False,
-            'per_device_train_batch_size': 1,
-            'per_device_eval_batch_size':  1,
-            'gradient_accumulation_steps': 8,
+            'per_device_train_batch_size': 4,
+            'per_device_eval_batch_size':  4,
+            'gradient_accumulation_steps': 2,
             'lr_scheduler_type': 'cosine_with_restarts',
             'lr_scheduler_kwargs':{
                 'num_cycles': 6,
@@ -107,8 +107,8 @@ def main():
             'dataloader_num_workers': 2,
             'eval_strategy': "steps",
     #         'torch_empty_cache_steps': 16,
-            'eval_steps': 16,
-            'logging_steps': 16,
+            'eval_steps': 32,
+            'logging_steps': 32,
             'load_best_model_at_end': True,
             'seed': 42,
             'data_seed': 42,
