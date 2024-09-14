@@ -23,8 +23,7 @@ def get_dtype(config):
 def load_tokenizer(config):
     tokenizer = AutoTokenizer.from_pretrained(
         config.model_name, 
-        padding_side=config.padding_side,
-    #     model_max_length=512,
+        **OmegaConf.to_object(config.tokenizer_config)
     )
     tokenizer.pad_token = tokenizer.eos_token
 
