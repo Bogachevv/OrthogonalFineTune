@@ -1,0 +1,69 @@
+model_name: meta-llama/Meta-Llama-3-8B-Instruct
+tasks:
+- FINETUNE
+task_name: all
+max_length: 512
+n_shots: 0
+fp16: true
+bf16: false
+num_ths: 5
+val_ds_size: 128
+val_ds_seed: 73
+loader_config:
+  num_proc: ${num_ths}
+tokenizer_config:
+  padding_side: left
+adapter_config:
+  ft_strategy: BOFT
+  target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+  LoRA_config:
+    r: 16
+    lora_alpha: 32
+    lora_dropout: 0.05
+    target_modules: ${adapter_config.target_modules}
+  BOFT_config:
+    boft_block_size: 8
+    boft_n_butterfly_factor: 1
+    bias: none
+    boft_dropout: 0.05
+    target_modules: ${adapter_config.target_modules}
+evaluation_config:
+  num_splits: 20
+  max_new_tokens: 4
+  batch_size: 32
+  empty_cache: true
+  dump_path: ./preds_{0}.bin
+trainer_config:
+  output_dir: bogachevv/Llama-3-8b-BOFT
+  max_seq_length: ${max_length}
+  dataset_text_field: text
+  fp16: ${fp16}
+  bf16: ${bf16}
+  full_determinism: false
+  per_device_train_batch_size: 3
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 2
+  lr_scheduler_type: cosine_with_restarts
+  lr_scheduler_kwargs:
+    num_cycles: 4
+  warmup_steps: 100
+  max_steps: 2048
+  learning_rate: 0.0001
+  weight_decay: 0.01
+  dataloader_num_workers: ${num_ths}
+  eval_strategy: steps
+  eval_steps: 32
+  logging_steps: 32
+  load_best_model_at_end: true
+  seed: 42
+  data_seed: 42
+  report_to: wandb
+  save_strategy: steps
+  save_steps: 128
