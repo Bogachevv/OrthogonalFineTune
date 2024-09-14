@@ -49,6 +49,9 @@ def run_tasks(config):
     train_dataset  = dataset['auxiliary_train']
 
     for i, task in enumerate(tasks):
+        if isinstance(task, str):
+            task = Task[task]
+
         if task is Task.INFERENCE:
             pl = model_loader.get_pipeline(config, model, tokenizer)
             run_inference(config, pl, test_dataset, task_idx=i)
