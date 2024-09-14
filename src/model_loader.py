@@ -42,19 +42,17 @@ def load_model(config):
     return model
 
 def get_peft(config, model):
-    # TODO: It is necessary to implement for other PEFT strategies
-
-    if config.ft_strategy == 'LoRA':
+    if config.adapter_config.ft_strategy == 'LoRA':
         adapter_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,
             inference_mode=False, 
-            **OmegaConf.to_object(config.LoRA_config),
+            **OmegaConf.to_object(config.adapter_config.LoRA_config),
         )
-    elif config.ft_strategy == 'BOFT':
+    elif config.adapter_config.ft_strategy == 'BOFT':
         adapter_config = BOFTConfig(
             task_type=TaskType.CAUSAL_LM,
             inference_mode=False,
-            **OmegaConf.to_object(config.BOFT_config)
+            **OmegaConf.to_object(config.adapter_config.BOFT_config)
         )
     else:
         raise ValueError('Incorrect FT type')
