@@ -69,14 +69,27 @@ def main():
         'n_shots': 0,
         'fp16': True,
         'bf16': False,
+        'val_ds_size': 128,
+        'val_ds_seed': 73,
         'loader_config': {
             'num_proc': 2,
         },
-        'LoRA_config': {
-            'r': 16, 
-            'lora_alpha': 32, 
-            'lora_dropout': 0.05,
-            'target_modules': ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj'],
+        'adapter_config':{
+            'ft_strategy': 'BOFT',
+            'LoRA_config': {
+                'r': 16, 
+                'lora_alpha': 32, 
+                'lora_dropout': 0.05,
+                'target_modules': ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj'],
+            },
+            'BOFT_config': {  # m=2, b=8
+                'boft_block_size': 8,
+        #         'boft_block_num': 8,
+                'boft_n_butterfly_factor': 1,
+                'bias': 'none',
+                'target_modules': ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj'],
+                'boft_dropout': 0.05,
+            },
         },
         'evaluation_config':{
             'num_splits': 20,

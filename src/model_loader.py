@@ -45,16 +45,25 @@ def load_model(config):
 def get_peft(config, model):
     # TODO: It is necessary to implement for other PEFT strategies
 
-    lora_config = LoraConfig(
-        task_type=TaskType.CAUSAL_LM,
-        inference_mode=False, 
-        **OmegaConf.to_object(config.LoRA_config),
-    )
+    if config.ft_strategy == 'LoRA':
+        adapter_config = LoraConfig(
+            task_type=TaskType.CAUSAL_LM,
+            inference_mode=False, 
+            **OmegaConf.to_object(config.LoRA_config),
+        )
+    elif config.ft_strategy == 'BOFT':
+        adapter_config = BOFTConfig(
+            task_type=TaskType.CAUSAL_LM,
+            inference_mode=False,
+            **OmegaConf.to_object(config.BOFT_config)
+        )
+    else:
+        raise ValueError('Incorrect FT type')
 
-    lora_model = get_peft_model(model, lora_config)
-    lora_model.print_trainable_parameters()
+    model_adapter = get_peft_model(model, adapter_config)    
+    model_adapter.print_trainable_parameters()
 
-    return lora_model
+    return model_adapter
 
 def get_pipeline(config, model, tokenizer):
     torch_dtype = get_dtype(config)

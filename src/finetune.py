@@ -14,6 +14,15 @@ def get_trainer(config, model, tokenizer, train_dataset, val_dataset):
         **OmegaConf.to_object(config.trainer_config),
     )
 
+    if config.val_ds_size:
+        if config.val_ds_seed:
+            val_dataset = val_dataset.shuffle(config.val_ds_seed)
+        
+        val_dataset = val_dataset.select(
+            range(config.val_ds_seed)
+        )
+        
+
     trainer = SFTTrainer(
         model=model,
         tokenizer=tokenizer,
