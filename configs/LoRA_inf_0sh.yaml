@@ -1,7 +1,7 @@
 model_name: meta-llama/Meta-Llama-3-8B-Instruct
 run_name: Llama-3-8b-LoRA
 tasks:
-- FINETUNE
+- INFERENCE
 task_name: all
 max_length: 512
 n_shots: 0
@@ -15,8 +15,8 @@ loader_config:
 tokenizer_config:
   padding_side: left
 adapter_config:
-  peft_pretrained: false
-  peft_is_trainable: true
+  peft_pretrained: true
+  peft_is_trainable: false
   peft_pretrained_path: ./runs/${run_name}/finetuned_model
   ft_strategy: LoRA
   target_modules:
@@ -41,7 +41,7 @@ adapter_config:
 evaluation_config:
   num_splits: 20
   max_new_tokens: 4
-  batch_size: 32
+  batch_size: 8
   empty_cache: true
   dump_path: ./runs/${run_name}/preds_${n_shots}sh_{0}.bin
 trainer_config:
@@ -71,3 +71,4 @@ trainer_config:
   report_to: wandb
   save_strategy: steps
   save_steps: 128
+

@@ -1,4 +1,5 @@
 model_name: meta-llama/Meta-Llama-3-8B-Instruct
+run_name: Llama-3-8b-BOFT
 tasks:
 - FINETUNE
 task_name: all
@@ -14,6 +15,9 @@ loader_config:
 tokenizer_config:
   padding_side: left
 adapter_config:
+  peft_pretrained: false
+  peft_is_trainable: true
+  peft_pretrained_path: ./runs/${run_name}/finetuned_model
   ft_strategy: BOFT
   target_modules:
   - q_proj
@@ -39,9 +43,9 @@ evaluation_config:
   max_new_tokens: 4
   batch_size: 32
   empty_cache: true
-  dump_path: ./preds_{0}.bin
+  dump_path: ./runs/${run_name}/preds_${n_shots}sh_{0}.bin
 trainer_config:
-  output_dir: bogachevv/Llama-3-8b-BOFT
+  output_dir: bogachevv/${run_name}
   max_seq_length: ${max_length}
   dataset_text_field: text
   fp16: ${fp16}
@@ -59,7 +63,7 @@ trainer_config:
   weight_decay: 0.01
   dataloader_num_workers: ${num_ths}
   eval_strategy: steps
-  eval_steps: 32
+  eval_steps: 128
   logging_steps: 32
   load_best_model_at_end: true
   seed: 42
