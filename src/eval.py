@@ -15,7 +15,7 @@ def _inference_model(eval_cfg, pl, test_dataset):
 
     with torch.inference_mode():
         for i, split in enumerate(np.array_split(np.arange(len(test_dataset)), eval_cfg.num_splits)):
-            print(f"Run {i} with split {split}")
+            print(f"Run {i} with split [{split[0]}, {split[-1]}]", flush=True)
 
             model_pred = pl(
                 test_dataset.select(split)['text_wa_answer'],
