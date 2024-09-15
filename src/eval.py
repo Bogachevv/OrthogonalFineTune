@@ -7,20 +7,16 @@ import torch.nn.functional as F
 
 from omegaconf import OmegaConf
 
-import tqdm.notebook as tqdm
-
 import categories
-import model_loader
 
 
 def _inference_model(eval_cfg, pl, test_dataset):
     model_preds = []
 
     with torch.inference_mode():
-        for i, split in tqdm.tqdm(
-            enumerate(np.array_split(np.arange(len(test_dataset)), eval_cfg.num_splits)),
-            total=eval_cfg.num_splits,
-        ):            
+        for i, split in enumerate(np.array_split(np.arange(len(test_dataset)), eval_cfg.num_splits)):
+            print(f"Run {i} with split {split}")
+
             model_pred = pl(
                 test_dataset.select(split)['text_wa_answer'],
                 return_full_text=False,
