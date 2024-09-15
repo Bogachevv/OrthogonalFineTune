@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import transformers
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from transformers import pipeline
-from peft import get_peft_model, LoraConfig, BOFTConfig, TaskType
+from peft import get_peft_model, PeftConfig, LoraConfig, BOFTConfig, PeftModel, TaskType
 
 from omegaconf import OmegaConf
 
@@ -41,17 +41,18 @@ def load_model(config):
 
     return model
 
-def get_peft(config, model):
+
+def _get_peft_new(config, model):
     if config.adapter_config.ft_strategy == 'LoRA':
         adapter_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,
-            inference_mode=False, 
+            inference_mode=not config.adapter_config.peft_is_trainable, 
             **OmegaConf.to_object(config.adapter_config.LoRA_config),
         )
     elif config.adapter_config.ft_strategy == 'BOFT':
         adapter_config = BOFTConfig(
             task_type=TaskType.CAUSAL_LM,
-            inference_mode=False,
+            inference_mode=not config.adapter_config.peft_is_trainable,
             **OmegaConf.to_object(config.adapter_config.BOFT_config)
         )
     else:
@@ -60,7 +61,26 @@ def get_peft(config, model):
     model_adapter = get_peft_model(model, adapter_config)    
     model_adapter.print_trainable_parameters()
 
+
+def _get_peft_pretrained(config, model):
+    adapter_pth = config.adapter_config.peft_pretrained_path
+
+    # adapter_config = PeftConfig.from_pretrained(adapter_pth)
+    model_adapter = PeftModel.from_pretrained(
+        model=model,
+        model_id=adapter_pth,
+        is_trainable=config.adapter_config.peft_is_trainable,
+    )
+
     return model_adapter
+
+
+def get_peft(config, model):
+    if config.adapter_config.peft_pretrained:
+        return _get_peft_pretrained(config, model)
+    else:
+        return _get_peft_new(config, model)
+
 
 def get_pipeline(config, model, tokenizer):
     torch_dtype = get_dtype(config)

@@ -16,8 +16,8 @@ def run_finetune(config, model, tokenizer, train_dataset, val_dataset):
     trainer = finetune.get_trainer(config, model, tokenizer, train_dataset, val_dataset)
     trainer.train()
 
-    model.save_pretrained("./fine_tuned_model")
-    tokenizer.save_pretrained("./fine_tuned_model")
+    model.save_pretrained(config.adapter_config.peft_pretrained_path)
+    tokenizer.save_pretrained(config.adapter_config.peft_pretrained_path)
 
 def run_inference(config, pl, test_dataset, task_idx=None):
     preds_df = eval.make_preds(
