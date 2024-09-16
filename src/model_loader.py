@@ -15,7 +15,7 @@ def get_dtype(config):
     if config.fp16:
         torch_dtype = torch.float16
     if config.bf16:
-        torch_dtype = torch.bloat16 # The flag bf16 overrides the flag fp16
+        torch_dtype = torch.bfloat16 # The flag bf16 overrides the flag fp16
     
     return torch_dtype
 
@@ -60,6 +60,8 @@ def _get_peft_new(config, model):
 
     model_adapter = get_peft_model(model, adapter_config)    
     model_adapter.print_trainable_parameters()
+
+    return model_adapter
 
 
 def _get_peft_pretrained(config, model):
