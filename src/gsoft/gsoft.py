@@ -6,7 +6,7 @@ from gs_orthogonal import GSOrthogonal
 from peft.tuners.tuners_utils import BaseTunerLayer
 
 
-class GSOFTLinear(BaseTunerLayer):
+class GSOFTLinear(nn.Module, BaseTunerLayer):
     def __init__(
             self,
             pre_layer: nn.Module,
