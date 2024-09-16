@@ -9,7 +9,14 @@ from blockdiag_butterfly_multiply import BlockdiagButterflyMultiply
 
 
 class GSOrthogonal(nn.Module):
-    def __init__(self, n: int, nblocks: int, orthogonal=True, method="cayley", block_size=None):
+    def __init__(self, 
+                 n: int, 
+                 nblocks: int, 
+                 orthogonal=True, 
+                 method="cayley", 
+                 block_size=None,
+                 base_tensor: torch.Tensor = None,
+                 ):
 
         if block_size is not None:
             assert n % block_size == 0
@@ -19,8 +26,12 @@ class GSOrthogonal(nn.Module):
 
         super().__init__()
 
-        self.gsoft_R = nn.Parameter(torch.empty(nblocks, n // nblocks, n // nblocks))
-        self.gsoft_L = nn.Parameter(torch.empty(nblocks, n // nblocks, n // nblocks))
+        if base_tensor is None:
+            self.gsoft_R = nn.Parameter(torch.empty(nblocks, n // nblocks, n // nblocks))
+            self.gsoft_L = nn.Parameter(torch.empty(nblocks, n // nblocks, n // nblocks))
+        else:
+            self.gsoft_R = nn.Parameter(base_tensor.new_empty(nblocks, n // nblocks, n // nblocks))
+            self.gsoft_L = nn.Parameter(base_tensor.new_empty(nblocks, n // nblocks, n // nblocks))
 
         self.orthogonal = orthogonal
         self.n = n
