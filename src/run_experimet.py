@@ -11,6 +11,7 @@ import pickle
 class Task(Enum):
     INFERENCE = 1,
     FINETUNE = 2,
+    VALIDATE = 3,
 
 def run_finetune(config, model, tokenizer, train_dataset, val_dataset):
     trainer = finetune.get_trainer(config, model, tokenizer, train_dataset, val_dataset)
@@ -55,6 +56,9 @@ def run_tasks(config):
         if task is Task.INFERENCE:
             pl = model_loader.get_pipeline(config, model, tokenizer)
             run_inference(config, pl, test_dataset, task_idx=i)
+        elif task is Task.VALIDATE:
+            pl = model_loader.get_pipeline(config, model, tokenizer)
+            run_inference(config, pl, validation_dataset, task_idx=i)
         elif task is Task.FINETUNE:
             run_finetune(config, model, tokenizer, train_dataset, validation_dataset)
         else:            
