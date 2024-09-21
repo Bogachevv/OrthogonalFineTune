@@ -1,5 +1,6 @@
 import sys
 sys.path.append('./src')
+sys.path.append('./src/gsoft')
 
 from src.run_experimet import run
 

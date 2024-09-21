@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 from peft.tuners.tuners_utils import BaseTuner, BaseTunerLayer, check_target_module_exists, onload_layer
 
-from gsoft.gsoft import GSOFTLinear
+from gsoft import GSOFTLinear
 
 
 def get_layer(model, name):
