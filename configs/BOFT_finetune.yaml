@@ -26,7 +26,6 @@ adapter_config:
   - o_proj
   - gate_proj
   - up_proj
-  - down_proj
   LoRA_config:
     r: 16
     lora_alpha: 32

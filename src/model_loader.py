@@ -10,6 +10,22 @@ from peft import get_peft_model, PeftConfig, LoraConfig, BOFTConfig, PeftModel, 
 from omegaconf import OmegaConf
 
 
+def warmup_boft():
+    model = nn.Sequential()
+    model.add_module('layer', nn.Linear(16, 32))
+    
+    adapter_config = BOFTConfig(
+        inference_mode=False,
+        boft_block_size=4,
+        boft_n_butterfly_factor=2,
+        bias='none',
+        target_modules=['layer']
+    )
+    
+    model_adapter = get_peft_model(model, adapter_config)
+    assert model_adapter is not None, "model_adapter is None"
+
+
 def get_dtype(config):
     torch_dtype = torch.float32
     if config.fp16:
@@ -50,6 +66,7 @@ def _get_peft_new(config, model):
             **OmegaConf.to_object(config.adapter_config.LoRA_config),
         )
     elif config.adapter_config.ft_strategy == 'BOFT':
+        warmup_boft()
         adapter_config = BOFTConfig(
             task_type=TaskType.CAUSAL_LM,
             inference_mode=not config.adapter_config.peft_is_trainable,
@@ -67,7 +84,6 @@ def _get_peft_new(config, model):
 def _get_peft_pretrained(config, model):
     adapter_pth = config.adapter_config.peft_pretrained_path
 
-    # adapter_config = PeftConfig.from_pretrained(adapter_pth)
     model_adapter = PeftModel.from_pretrained(
         model=model,
         model_id=adapter_pth,
