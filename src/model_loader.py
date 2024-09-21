@@ -7,6 +7,8 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from transformers import pipeline
 from peft import get_peft_model, PeftConfig, LoraConfig, BOFTConfig, PeftModel, TaskType
 
+from gsoft.gsoft_tmp_injector import inject_gsoft
+
 from omegaconf import OmegaConf
 
 
@@ -72,6 +74,14 @@ def _get_peft_new(config, model):
             inference_mode=not config.adapter_config.peft_is_trainable,
             **OmegaConf.to_object(config.adapter_config.BOFT_config)
         )
+    elif config.adapter_config.ft_strategy == 'GSOFT':
+        # TODO: Implement PEFT model instead of custom injection
+        adapter_config = OmegaConf.to_object(config.adapter_config.GSOFT_config)
+        model_adapter = inject_gsoft(adapter_config, model)
+
+        print("WARNING: spaggety implementation")
+
+        return model_adapter
     else:
         raise ValueError('Incorrect FT type')
 

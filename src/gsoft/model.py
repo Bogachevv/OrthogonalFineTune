@@ -70,7 +70,11 @@ class GSOFTModel(BaseTuner):
         current_key: str,
 ) -> None:
         kwargs = {
-            
+            'nblocks': peft_config.nblocks,
+            'orthogonal': peft_config.orthogonal,
+            'method': peft_config.method,
+            'block_size': peft_config.block_size,
+            'scale': peft_config.scale,
         }
 
         if isinstance(target, GSOFTLinear):
@@ -82,13 +86,28 @@ class GSOFTModel(BaseTuner):
             new_module.requires_grad_(False)
         self._replace_module(parent, target_name, new_module, target)
     
-    def _replace_module(self, parent, child_name, new_module, child):
-        raise NotImplemented()
-        # setattr(parent, child_name, new_module)
-        # # It's not necessary to set requires_grad here, as that is handled by
-        # # _mark_only_adapters_as_trainable
+    @staticmethod
+    def __get_layer(model, name):
+        layer = model
+        for attr in name.split("."):
+            layer = getattr(layer, attr)
+        return layer
+    
+    @staticmethod
+    def __set_layer(model, name, layer):
+        try:
+            attrs, name = name.rsplit(".", 1)
+            model = GSOFTModel.get_layer(model, attrs)
+        except ValueError:
+            pass
+        setattr(model, name, layer)
 
-        # # child layer wraps the original module, unpack it
+    def _replace_module(self, parent, child_name, new_module, child):
+        setattr(parent, child_name, new_module)
+        # It's not necessary to set requires_grad here, as that is handled by
+        # _mark_only_adapters_as_trainable
+
+        ## child layer wraps the original module, unpack it
         # if hasattr(child, "base_layer"):
         #     child = child.base_layer
 
@@ -106,20 +125,6 @@ class GSOFTModel(BaseTuner):
         #     else:
         #         new_module.state = child.state
         #     new_module.to(child.weight.device)
-
-        # # dispatch to correct device
-        # for name, module in new_module.named_modules():
-        #     if (self.prefix in name) or ("ranknum" in name):
-        #         weight = (
-        #             child.qweight
-        #             if hasattr(child, "qweight")
-        #             else child.W_q
-        #             if hasattr(child, "W_q")
-        #             else child.weight
-        #             if hasattr(child, "weight")
-        #             else next(child.parameters())
-        #         )
-        #         module.to(weight.device)
 
     def _mark_only_adapters_as_trainable(self, model: nn.Module) -> None:
         raise NotImplemented()
