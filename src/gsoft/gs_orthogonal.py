@@ -30,8 +30,8 @@ class GSOrthogonal(nn.Module):
             self.gsoft_R = nn.Parameter(torch.empty(nblocks, n // nblocks, n // nblocks))
             self.gsoft_L = nn.Parameter(torch.empty(nblocks, n // nblocks, n // nblocks))
         else:
-            self.gsoft_R = nn.Parameter(base_tensor.new_empty(nblocks, n // nblocks, n // nblocks))
-            self.gsoft_L = nn.Parameter(base_tensor.new_empty(nblocks, n // nblocks, n // nblocks))
+            self.gsoft_R = nn.Parameter(base_tensor.new_empty(nblocks, n // nblocks, n // nblocks, dtype=torch.float32))
+            self.gsoft_L = nn.Parameter(base_tensor.new_empty(nblocks, n // nblocks, n // nblocks, dtype=torch.float32))
 
         self.orthogonal = orthogonal
         self.n = n

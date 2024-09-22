@@ -23,9 +23,26 @@ def set_layer(model, name, layer):
     setattr(model, name, layer)
 
 
+def _get_total_parameters(model):
+    return sum(p.numel() for p in model.parameters())
+
+def _get_trainable_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+def print_num_trainable(model):
+    total_params = _get_total_parameters(model)
+    trainable_params = _get_trainable_parameters(model)
+    frac = (float(trainable_params) / total_params) * 100
+    
+    print(f"trainable: {trainable_params}  |  total: {total_params}  |  trainable(%): {frac:.6f}")
+
+
 def inject_gsoft(gsoft_config, model):
     model_adapter = model
     print("WARNING: inject_gsoft modify original model")
+
+    for param_name, param in model_adapter.named_parameters():
+        param.requires_grad = False
 
     for name, module in model_adapter.named_modules():
         if not check_target_module_exists(gsoft_config, name):

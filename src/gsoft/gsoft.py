@@ -31,7 +31,7 @@ class GSOFTLinear(nn.Module, BaseTunerLayer):
         self.gs_ort = GSOrthogonal(in_features, nblocks, orthogonal, method, block_size, base_tensor=base_tensor)
         
         if self.scale:
-            self.gsoft_s = nn.Parameter(base_tensor.new_ones(out_features))
+            self.gsoft_s = nn.Parameter(base_tensor.new_ones(out_features, dtype=torch.float32))
         
 
     def forward(self, x: torch.Tensor):
