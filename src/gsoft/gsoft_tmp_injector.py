@@ -70,4 +70,5 @@ def inject_gsoft(gsoft_config, model):
         print(f"Setting adapter at {name:20} layer")
         set_layer(model_adapter, name, gsoft_layer)
     
+    print_num_trainable(model_adapter)
     return model_adapter
