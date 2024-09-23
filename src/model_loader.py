@@ -61,7 +61,9 @@ def load_model(config):
 
 
 def _get_peft_new(config, model):
-    if config.adapter_config.ft_strategy == 'LoRA':
+    if config.adapter_config.ft_strategy == 'none':
+        return model
+    elif config.adapter_config.ft_strategy == 'LoRA':
         adapter_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,
             inference_mode=not config.adapter_config.peft_is_trainable, 

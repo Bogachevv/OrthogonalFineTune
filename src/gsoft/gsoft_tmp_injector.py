@@ -67,7 +67,6 @@ def inject_gsoft(gsoft_config, model):
             **kwargs
         )
 
-#         print(gsoft_layer, "\n", module, "\n\n")
         print(f"Setting adapter at {name:20} layer")
         set_layer(model_adapter, name, gsoft_layer)
     
