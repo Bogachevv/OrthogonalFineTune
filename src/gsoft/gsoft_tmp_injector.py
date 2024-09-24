@@ -53,10 +53,10 @@ def inject_gsoft(gsoft_config, model):
 
         out_f, in_f = module.weight.shape
         kwargs = {
-            'nblocks': gsoft_config.nblocks,
+            'nblocks': gsoft_config.get('nblocks', None),
             'orthogonal': gsoft_config.orthogonal,
             'method': gsoft_config.method,
-            'block_size': gsoft_config.block_size,
+            'block_size': gsoft_config.get('block_size', None),
             'scale': gsoft_config.scale,
         }
 
