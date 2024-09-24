@@ -39,8 +39,12 @@ def get_dtype(config):
 
 
 def load_tokenizer(config):
+    model_pth = config.model_name
+    if config.adapter_config.get('peft_as_model', False):
+        model_pth = config.adapter_config.peft_pretrained_path
+
     tokenizer = AutoTokenizer.from_pretrained(
-        config.model_name, 
+        model_pth, 
         **OmegaConf.to_object(config.tokenizer_config)
     )
     tokenizer.pad_token = tokenizer.eos_token
@@ -51,8 +55,12 @@ def load_tokenizer(config):
 def load_model(config):
     torch_dtype = get_dtype(config)
 
+    model_pth = config.model_name
+    if config.adapter_config.get('peft_as_model', False):
+        model_pth = config.adapter_config.peft_pretrained_path
+
     model = AutoModelForCausalLM.from_pretrained(
-        config.model_name,
+        model_pth,
         device_map='auto',
         torch_dtype=torch_dtype,
     )
