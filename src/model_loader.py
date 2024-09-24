@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import transformers
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from transformers import pipeline
+from transformers.modeling_utils import load_sharded_checkpoint
 from peft import get_peft_model, PeftConfig, LoraConfig, BOFTConfig, PeftModel, TaskType
 
 from gsoft_tmp_injector import inject_gsoft
@@ -39,12 +40,8 @@ def get_dtype(config):
 
 
 def load_tokenizer(config):
-    model_pth = config.model_name
-    if config.adapter_config.get('peft_as_model', False):
-        model_pth = config.adapter_config.peft_pretrained_path
-
     tokenizer = AutoTokenizer.from_pretrained(
-        model_pth, 
+        config.model_name, 
         **OmegaConf.to_object(config.tokenizer_config)
     )
     tokenizer.pad_token = tokenizer.eos_token
@@ -55,12 +52,8 @@ def load_tokenizer(config):
 def load_model(config):
     torch_dtype = get_dtype(config)
 
-    model_pth = config.model_name
-    if config.adapter_config.get('peft_as_model', False):
-        model_pth = config.adapter_config.peft_pretrained_path
-
     model = AutoModelForCausalLM.from_pretrained(
-        model_pth,
+        config.model_name,
         device_map='auto',
         torch_dtype=torch_dtype,
     )
@@ -102,6 +95,18 @@ def _get_peft_new(config, model):
 
 def _get_peft_pretrained(config, model):
     adapter_pth = config.adapter_config.peft_pretrained_path
+
+    if config.adapter_config.get('peft_as_model', False):
+        print(f"Loading finetuned model from shards...")
+
+        res = load_sharded_checkpoint(
+            model=model,
+            folder=adapter_pth,
+        ) 
+
+        print(res)
+
+        return model
 
     model_adapter = PeftModel.from_pretrained(
         model=model,
