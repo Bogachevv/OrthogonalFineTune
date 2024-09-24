@@ -60,10 +60,17 @@ def inject_gsoft(gsoft_config, model):
             'scale': gsoft_config.scale,
         }
 
+        gs_side = gsoft_config.get('side', 'left')
+        if gs_side == 'min':
+            gs_side = 'left' if (in_f <= out_f) else 'right'
+        
+        is_left = (gs_side == 'left')
+        
         gsoft_layer = GSOFTLinear(
             module, 
             in_features=in_f, 
-            out_features=out_f, 
+            out_features=out_f,
+            is_left=is_left, 
             **kwargs
         )
 

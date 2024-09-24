@@ -16,7 +16,8 @@ class GSOFTLinear(nn.Module, BaseTunerLayer):
             orthogonal: bool = True,
             method: str = 'cayley',
             block_size = None,
-            scale: bool = True
+            scale: bool = True,
+            is_left: bool = True,
             ):
 
         super().__init__()
@@ -26,18 +27,23 @@ class GSOFTLinear(nn.Module, BaseTunerLayer):
         self.out_features = out_features
         self.nblocks = nblocks
         self.scale = scale
+        self.is_left = is_left
 
         base_tensor = pre_layer.weight
-        self.gs_ort = GSOrthogonal(in_features, nblocks, orthogonal, method, block_size, base_tensor=base_tensor)
+        gs_features = in_features if is_left else out_features
+        self.gs_ort = GSOrthogonal(gs_features, nblocks, orthogonal, method, block_size, base_tensor=base_tensor)
         
         if self.scale:
             self.gsoft_s = nn.Parameter(base_tensor.new_ones(out_features, dtype=torch.float32))
         
 
     def forward(self, x: torch.Tensor):
-        
-        x = self.gs_ort(x)
-        x = F.linear(x, self.pre_layer.weight)
+        if self.is_left:
+            x = self.gs_ort(x)
+            x = F.linear(x, self.pre_layer.weight)
+        else:
+            x = F.linear(x, self.pre_layer.weight)
+            x = self.gs_ort(x)
         
         if self.scale:
             x = self.gsoft_s * x
