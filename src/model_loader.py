@@ -99,6 +99,8 @@ def _get_peft_pretrained(config, model):
     if config.adapter_config.get('peft_as_model', False):
         print(f"Loading finetuned model from shards...")
 
+        model = _get_peft_new(config, model)
+
         res = load_sharded_checkpoint(
             model=model,
             folder=adapter_pth,
