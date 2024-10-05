@@ -41,8 +41,10 @@ def inject_gsoft(gsoft_config, model):
     model_adapter = model
     print("WARNING: inject_gsoft modify original model")
 
-    for param_name, param in model_adapter.named_parameters():
-        param.requires_grad = False
+    disable_model_grads = gsoft_config.get('disable_model_grads', True)
+    if disable_model_grads:
+        for param_name, param in model_adapter.named_parameters():
+            param.requires_grad = False
 
     for name, module in model_adapter.named_modules():
         if not check_target_module_exists(gsoft_config, name):

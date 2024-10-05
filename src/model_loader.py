@@ -61,21 +61,8 @@ def load_model(config):
     return model
 
 
-def _get_peft_new(config, model):
-    if config.adapter_config.ft_strategy == 'LoRA':
-        adapter_config = LoraConfig(
-            task_type=TaskType.CAUSAL_LM,
-            inference_mode=not config.adapter_config.peft_is_trainable, 
-            **OmegaConf.to_object(config.adapter_config.LoRA_config),
-        )
-    elif config.adapter_config.ft_strategy == 'BOFT':
-        warmup_boft()
-        adapter_config = BOFTConfig(
-            task_type=TaskType.CAUSAL_LM,
-            inference_mode=not config.adapter_config.peft_is_trainable,
-            **OmegaConf.to_object(config.adapter_config.BOFT_config)
-        )
-    elif config.adapter_config.ft_strategy == 'GSOFT':
+def _get_peft_part(config, model, ft_strategy):
+    if ft_strategy == 'GSOFT':
         # TODO: Implement PEFT model instead of custom injection
         # adapter_config = OmegaConf.to_object(config.adapter_config.GSOFT_config)
         adapter_config = config.adapter_config.GSOFT_config
@@ -84,6 +71,20 @@ def _get_peft_new(config, model):
         print("WARNING: spaggety implementation")
 
         return model_adapter
+
+    if ft_strategy == 'LoRA':
+        adapter_config = LoraConfig(
+            task_type=TaskType.CAUSAL_LM,
+            inference_mode=not config.adapter_config.peft_is_trainable, 
+            **OmegaConf.to_object(config.adapter_config.LoRA_config),
+        )
+    elif ft_strategy == 'BOFT':
+        warmup_boft()
+        adapter_config = BOFTConfig(
+            task_type=TaskType.CAUSAL_LM,
+            inference_mode=not config.adapter_config.peft_is_trainable,
+            **OmegaConf.to_object(config.adapter_config.BOFT_config)
+        )
     else:
         raise ValueError('Incorrect FT type')
 
@@ -91,6 +92,17 @@ def _get_peft_new(config, model):
     model_adapter.print_trainable_parameters()
 
     return model_adapter
+
+
+def _get_peft_new(config, model):
+    ft_strategy_ls = config.adapter_config.ft_strategy
+    ft_strategy_ls = [ft_strategy_ls] if isinstance(ft_strategy_ls, str) else ft_strategy_ls
+    
+    model_adapter = model
+    for ft_strategy in ft_strategy_ls:
+        model_adapter = _get_peft_part(config, model, ft_strategy=ft_strategy)
+
+    return model_adapter    
 
 
 def _get_peft_pretrained(config, model):
