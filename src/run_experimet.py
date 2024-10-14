@@ -12,6 +12,8 @@ class Task(Enum):
     INFERENCE = 1,
     FINETUNE = 2,
     VALIDATE = 3,
+    MULTILANG = 4,
+
 
 def run_finetune(config, model, tokenizer, train_dataset, val_dataset):
     trainer = finetune.get_trainer(config, model, tokenizer, train_dataset, val_dataset)
@@ -20,14 +22,14 @@ def run_finetune(config, model, tokenizer, train_dataset, val_dataset):
     model.save_pretrained(config.adapter_config.peft_pretrained_path)
     tokenizer.save_pretrained(config.adapter_config.peft_pretrained_path)
 
-def run_inference(config, pl, test_dataset, task_idx=None):
+def run_inference(config, pl, test_dataset, task_idx=None, path: str = None):
     preds_df = eval.make_preds(
         config=config,
         pl=pl,
         test_dataset=test_dataset,
     )
 
-    path = config.evaluation_config.dump_path
+    path = config.evaluation_config.get('dump_path', None) if path is None else path
     task_idx = 0 if task_idx is None else task_idx
     path = path.format(task_idx)
 
@@ -36,6 +38,17 @@ def run_inference(config, pl, test_dataset, task_idx=None):
             preds_df,
             file=f,
         )
+
+
+def run_multitask(config, pl, test_datasets, task_idx=None):
+    path: str = config.evaluation_config.get('dump_path', None)
+    
+    for lang, dataset in test_datasets.items():
+        path = path.replace('.bin', f'_{lang}.bin')
+        print(f"Running predictions for {lang}, {path=}\n")
+
+        run_inference(config, pl, dataset, task_idx=task_idx, path=path)
+
 
 def run_tasks(config):
     tasks = config.tasks
@@ -49,6 +62,9 @@ def run_tasks(config):
     test_dataset = dataset["test"]
     train_dataset  = dataset['auxiliary_train']
 
+    multilang_test = data_preparation.load_multilang_MMLU(config, tokenizer)
+    multilang_test['EN_US'] = test_dataset
+
     for i, task in enumerate(tasks):
         if isinstance(task, str):
             task = Task[task]
@@ -56,6 +72,9 @@ def run_tasks(config):
         if task is Task.INFERENCE:
             pl = model_loader.get_pipeline(config, model, tokenizer)
             run_inference(config, pl, test_dataset, task_idx=i)
+        elif task in Task.MULTILANG:
+            pl = model_loader.get_pipeline(config, model, tokenizer)
+            run_multitask(config, pl, multilang_test, task_idx=i)
         elif task is Task.VALIDATE:
             pl = model_loader.get_pipeline(config, model, tokenizer)
             run_inference(config, pl, validation_dataset, task_idx=i)

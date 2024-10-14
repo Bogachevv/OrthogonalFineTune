@@ -4,7 +4,7 @@ from omegaconf import OmegaConf
 
 import functools
 
-__all__ = ['load_MMLU']
+__all__ = ['load_MMLU', 'load_multilang_MMLU']
 
 def _prepare_question(examples):
     prompt = f"{examples['question']}\n"
@@ -56,6 +56,17 @@ def _remove_answer(example):
     return {'text_wa_answer': text_wa_answer}
 
 
+def _multilang_get_choices(example):
+    choices = [
+        example[ltr]
+        for ltr in ('A', 'B', 'C', 'D')
+    ]
+    
+    answer = ord(example['Answer']) - ord('A')
+    
+    return {'choices': choices, 'answer': answer}
+
+
 def load_MMLU(config, tokenizer) -> DatasetDict:
     mmlu_dataset =  load_dataset("cais/mmlu", config.task_name)
     loader_config = config.loader_config
@@ -88,3 +99,39 @@ def load_MMLU(config, tokenizer) -> DatasetDict:
     instructions_datasets.set_format("torch")
 
     return instructions_datasets
+
+
+def load_multilang_MMLU(config, tokenizer) -> DatasetDict:
+    loader_config = config.loader_config
+    langs = config.get('MMMLU_langs', list())
+
+    if not langs:
+        return DatasetDict()
+
+    if config.get('n_shots', 0) != 0:
+        raise ValueError('Incorrect value of n_shots')
+
+    multilang_mmlu_dataset = DatasetDict()
+
+    for lang in langs:
+        multilang_mmlu_dataset[lang] = load_dataset('openai/MMMLU', lang)['test']
+
+    multilang_mmlu_dataset = multilang_mmlu_dataset.map(_multilang_get_choices)
+    multilang_mmlu_dataset = multilang_mmlu_dataset.remove_columns(['A', 'B', 'C', 'D', 'Answer', 'Unnamed: 0'])
+    multilang_mmlu_dataset = multilang_mmlu_dataset.rename_column('Question', 'question')
+    multilang_mmlu_dataset = multilang_mmlu_dataset.rename_column('Subject', 'subject')
+
+    multilang_mmlu_dataset = multilang_mmlu_dataset.map(
+        function=functools.partial(
+            _prepare_instruction_text,
+            tokenizer=tokenizer,
+            config=config,
+            few_shot_datasets=None,
+        ),
+        batched=False, 
+        num_proc=loader_config.num_proc,
+    )
+
+    multilang_mmlu_dataset.set_format("torch")
+
+    return multilang_mmlu_dataset
