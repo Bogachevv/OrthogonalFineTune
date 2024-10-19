@@ -41,10 +41,10 @@ def run_inference(config, pl, test_dataset, task_idx=None, path: str = None):
 
 
 def run_multitask(config, pl, test_datasets, task_idx=None):
-    path: str = config.evaluation_config.get('dump_path', None)
+    base_path: str = config.evaluation_config.get('dump_path', None)
     
     for lang, dataset in test_datasets.items():
-        path = path.replace('.bin', f'_{lang}.bin')
+        path = base_path.format('{0}', lang)
         print(f"Running predictions for {lang}, {path=}\n")
 
         run_inference(config, pl, dataset, task_idx=task_idx, path=path)
