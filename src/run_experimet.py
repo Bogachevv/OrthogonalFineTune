@@ -57,13 +57,18 @@ def run_tasks(config):
     model = model_loader.load_model(config)
     model = model_loader.get_peft(config, model)
 
-    dataset = data_preparation.load_MMLU(config, tokenizer)
-    validation_dataset = dataset["validation"]
-    test_dataset = dataset["test"]
-    train_dataset  = dataset['auxiliary_train']
-
-    multilang_test = data_preparation.load_multilang_MMLU(config, tokenizer)
-    multilang_test['EN_US'] = test_dataset
+    if config.dataset == 'MMLU':
+        dataset = data_preparation.load_MMLU(config, tokenizer)
+        validation_dataset = dataset["validation"]
+        test_dataset = dataset["test"]
+        train_dataset  = dataset['auxiliary_train']
+    elif config.dataset == 'MMMLU':
+        multilang_test = data_preparation.load_multilang_MMLU(config, tokenizer)
+    elif config.dataset == 'ARC':
+        dataset = data_preparation.load_ARC(config, tokenizer)
+        validation_dataset = dataset["validation"]
+        test_dataset = dataset["test"]
+        train_dataset  = dataset['train']
 
     for i, task in enumerate(tasks):
         print(f"Running task {i}: {task}")

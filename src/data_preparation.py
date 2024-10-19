@@ -4,14 +4,29 @@ from omegaconf import OmegaConf
 
 import functools
 
-__all__ = ['load_MMLU', 'load_multilang_MMLU']
+__all__ = ['load_MMLU', 'load_multilang_MMLU', 'load_ARC']
+
+
+def _letter_to_int(choise):
+    if isinstance(choise, str):
+        return ord(choise) - ord('A')
+    
+    if isinstance(choise, int):
+        return choise
+    
+    raise ValueError(f'Incorrect type of choise: {type(choise)=}')
+
+
+def _int_to_letter(choise):
+    return chr(choise + ord('A'))
+
 
 def _prepare_question(examples):
     prompt = f"{examples['question']}\n"
     for letter, choice in zip(('A', 'B', 'C', 'D'), examples['choices']):
         prompt += f"{letter}. {choice}\n"
 
-    answer = chr(65 + examples['answer'])
+    answer = _int_to_letter(examples['answer'])
     
     return prompt, answer
 
@@ -24,16 +39,18 @@ def _prepare_prompt(examples, dev_dataset = None):
 
 
 def _prepare_instruction_text(example, *, tokenizer, config, few_shot_datasets):
+    subject_info =  f" about {example['subject']}" if 'subject' in example else ''
+
     instructions = [
         {
             "role": "system", 
-            "content": f"The following are multiple choice questions (with answers) about {example['subject']}. Output 'A', 'B', 'C', or 'D'. Full answer not needed."
+            "content": f"The following are multiple choice questions (with answers){subject_info}. Output 'A', 'B', 'C', or 'D'. Full answer not needed."
         },
     ]
 
-    if config['n_shots'] and example['subject']:
+    if config.dataset_loader_config.get('n_shots', None) and example.get('subject', None):
         few_shot_dataset = few_shot_datasets[example['subject']]
-        few_shot_dataset = few_shot_dataset.select(range(config['n_shots']))
+        few_shot_dataset = few_shot_dataset.select(range(config.dataset_loader_config['n_shots']))
     else:
         few_shot_dataset = None
     
@@ -62,14 +79,15 @@ def _multilang_get_choices(example):
         for ltr in ('A', 'B', 'C', 'D')
     ]
     
-    answer = ord(example['Answer']) - ord('A')
+    answer = _letter_to_int(example['Answer'])
     
     return {'choices': choices, 'answer': answer}
 
 
 def load_MMLU(config, tokenizer) -> DatasetDict:
-    mmlu_dataset =  load_dataset("cais/mmlu", config.task_name)
-    loader_config = config.loader_config
+    dataset_loader_config = config.dataset_loader_config
+
+    mmlu_dataset =  load_dataset("cais/mmlu", dataset_loader_config.task_name)
 
     few_shot_datasets = {
         subject: mmlu_dataset['dev'].filter(lambda row: row['subject'] == subject)
@@ -84,7 +102,7 @@ def load_MMLU(config, tokenizer) -> DatasetDict:
             few_shot_datasets=few_shot_datasets,
         ),
         batched=False, 
-        num_proc=loader_config.num_proc,
+        num_proc=dataset_loader_config.num_proc,
     )
 
     instructions_datasets['validation'] = instructions_datasets['validation'].map(
@@ -102,13 +120,13 @@ def load_MMLU(config, tokenizer) -> DatasetDict:
 
 
 def load_multilang_MMLU(config, tokenizer) -> DatasetDict:
-    loader_config = config.loader_config
+    dataset_loader_config = config.dataset_loader_config
     langs = config.get('MMMLU_langs', list())
 
     if not langs:
-        return DatasetDict()
+        raise ValueError('Languages not specified')
 
-    if config.get('n_shots', 0) != 0:
+    if dataset_loader_config.get('n_shots', 0) != 0:
         raise ValueError('Incorrect value of n_shots')
 
     multilang_mmlu_dataset = DatasetDict()
@@ -129,7 +147,7 @@ def load_multilang_MMLU(config, tokenizer) -> DatasetDict:
             few_shot_datasets=None,
         ),
         batched=False, 
-        num_proc=loader_config.num_proc,
+        num_proc=dataset_loader_config.num_proc,
     )
 
     multilang_mmlu_dataset = multilang_mmlu_dataset.map(
@@ -139,4 +157,44 @@ def load_multilang_MMLU(config, tokenizer) -> DatasetDict:
 
     multilang_mmlu_dataset.set_format("torch")
 
+    mmlu_dataset = load_MMLU(config=config, tokenizer=tokenizer)
+    multilang_mmlu_dataset['EN_US'] = mmlu_dataset['test']
+
     return multilang_mmlu_dataset
+
+
+def load_ARC(config, tokenizer) -> DatasetDict:
+    dataset_loader_config = config.dataset_loader_config
+
+    arc_dataset =  load_dataset("allenai/ai2_arc", dataset_loader_config.task_name)
+
+    arc_dataset = arc_dataset.map(lambda q: q['choices'], batched=False)
+    arc_dataset = arc_dataset.map(lambda q: {'answer': _letter_to_int(q['answerKey'])}, batched=False)
+    arc_dataset = arc_dataset.filter(lambda q: len(q['label']) == 4)
+
+    arc_dataset = arc_dataset.remove_columns(['choices', 'answerKey', 'id', 'label'])
+    arc_dataset = arc_dataset.rename_column('text', 'choices')
+
+    instructions_datasets = arc_dataset.map(
+        function=functools.partial(
+            _prepare_instruction_text,
+            tokenizer=tokenizer,
+            config=config,
+            few_shot_datasets=None,
+        ),
+        batched=False, 
+        num_proc=dataset_loader_config.num_proc,
+    )
+
+    instructions_datasets['validation'] = instructions_datasets['validation'].map(
+        function=_remove_answer, 
+        batched=False
+    )
+    instructions_datasets['test'] = instructions_datasets['test'].map(
+        function=_remove_answer, 
+        batched=False
+    )
+
+    instructions_datasets.set_format("torch")
+
+    return instructions_datasets
