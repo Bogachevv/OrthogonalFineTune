@@ -132,6 +132,11 @@ def load_multilang_MMLU(config, tokenizer) -> DatasetDict:
         num_proc=loader_config.num_proc,
     )
 
+    multilang_mmlu_dataset = multilang_mmlu_dataset.map(
+        function=_remove_answer, 
+        batched=False
+    )
+
     multilang_mmlu_dataset.set_format("torch")
 
     return multilang_mmlu_dataset

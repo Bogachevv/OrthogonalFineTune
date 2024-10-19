@@ -66,13 +66,15 @@ def run_tasks(config):
     multilang_test['EN_US'] = test_dataset
 
     for i, task in enumerate(tasks):
+        print(f"Running task {i}: {task}")
+
         if isinstance(task, str):
             task = Task[task]
 
         if task is Task.INFERENCE:
             pl = model_loader.get_pipeline(config, model, tokenizer)
             run_inference(config, pl, test_dataset, task_idx=i)
-        elif task in Task.MULTILANG:
+        elif task is Task.MULTILANG:
             pl = model_loader.get_pipeline(config, model, tokenizer)
             run_multitask(config, pl, multilang_test, task_idx=i)
         elif task is Task.VALIDATE:
