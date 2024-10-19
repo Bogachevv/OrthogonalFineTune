@@ -1,13 +1,13 @@
 model_name: meta-llama/Meta-Llama-3-8B-Instruct
-run_name: Llama-3-8b-LoRA
+run_name: Llama-3-8b-GSOFT
 tasks:
-- INFERENCE
+- FINETUNE
 task_name: all
 max_length: 512
 n_shots: 0
 fp16: true
 bf16: false
-num_ths: 5
+num_ths: 3
 val_ds_size: 128
 val_ds_seed: 73
 loader_config:
@@ -15,10 +15,10 @@ loader_config:
 tokenizer_config:
   padding_side: left
 adapter_config:
-  peft_pretrained: true
-  peft_is_trainable: false
+  peft_pretrained: false
+  peft_is_trainable: true
   peft_pretrained_path: ./runs/${run_name}/finetuned_model
-  ft_strategy: LoRA
+  ft_strategy: GSOFT
   target_modules:
   - q_proj
   - k_proj
@@ -26,7 +26,6 @@ adapter_config:
   - o_proj
   - gate_proj
   - up_proj
-  - down_proj
   LoRA_config:
     r: 16
     lora_alpha: 32
@@ -38,10 +37,17 @@ adapter_config:
     bias: none
     boft_dropout: 0.05
     target_modules: ${adapter_config.target_modules}
+  GSOFT_config:
+    nblocks: 256
+    orthogonal: true
+    method: cayley
+    block_size: null
+    scale: true
+    target_modules: ${adapter_config.target_modules}
 evaluation_config:
   num_splits: 20
   max_new_tokens: 4
-  batch_size: 8
+  batch_size: 32
   empty_cache: true
   dump_path: ./runs/${run_name}/preds_${n_shots}sh_{0}.bin
 trainer_config:
@@ -51,13 +57,13 @@ trainer_config:
   fp16: ${fp16}
   bf16: ${bf16}
   full_determinism: false
-  per_device_train_batch_size: 3
-  per_device_eval_batch_size: 4
-  gradient_accumulation_steps: 1
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 8
   lr_scheduler_type: cosine_with_restarts
   lr_scheduler_kwargs:
-    num_cycles: 4
-  warmup_steps: 100
+    num_cycles: 2
+  warmup_steps: 256
   max_steps: 2048
   learning_rate: 0.0001
   weight_decay: 0.01
@@ -71,5 +77,4 @@ trainer_config:
   data_seed: 42
   report_to: wandb
   save_strategy: steps
-  save_steps: 128
-
+  save_steps: 256
