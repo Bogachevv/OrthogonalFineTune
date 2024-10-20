@@ -1,7 +1,7 @@
 #!/bin/bash
 
 langs="./langs.txt"
-run_name="GSOFT-cfg3"
+run_name="GSOFT-cfg4"
 src_path="charisma:/home/vabogachev/OrthogonalFineTune/runs/Llama-3-8b-${run_name}/preds_0sh_0_"
 dst_path="./${run_name}/"
 
