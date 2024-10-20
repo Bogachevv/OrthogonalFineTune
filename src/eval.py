@@ -52,11 +52,13 @@ def _process_prediction(pred):
 def _preds_to_df(model_preds, test_dataset):
     preds_df = pd.DataFrame(model_preds)
 
-    preds_df['subject'] = test_dataset['subject']
+    if 'subject' in test_dataset:
+        preds_df['subject'] = test_dataset['subject']
+        preds_df['category'] = preds_df['subject'].apply(lambda subcat: categories.subcat_to_cat.get(subcat, None))
+    
     preds_df['pred'] = preds_df.apply(_process_prediction, axis=1)
     preds_df['true'] = list(map(lambda v: chr(v + ord('A')), test_dataset['answer']))
     preds_df['corr'] = (preds_df['pred'] == preds_df['true']).astype(np.int32)
-    preds_df['category'] = preds_df['subject'].apply(categories.subcat_to_cat.__getitem__)
 
     return preds_df
 
