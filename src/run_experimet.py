@@ -57,18 +57,7 @@ def run_tasks(config):
     model = model_loader.load_model(config)
     model = model_loader.get_peft(config, model)
 
-    if config.dataset == 'MMLU':
-        dataset = data_preparation.load_MMLU(config, tokenizer)
-        validation_dataset = dataset["validation"]
-        test_dataset = dataset["test"]
-        train_dataset  = dataset['auxiliary_train']
-    elif config.dataset == 'MMMLU':
-        multilang_test = data_preparation.load_multilang_MMLU(config, tokenizer)
-    elif config.dataset == 'ARC':
-        dataset = data_preparation.load_ARC(config, tokenizer)
-        validation_dataset = dataset["validation"]
-        test_dataset = dataset["test"]
-        train_dataset  = dataset['train']
+    dataset = data_preparation.load_dataset(config)
 
     for i, task in enumerate(tasks):
         print(f"Running task {i}: {task}")
@@ -78,15 +67,15 @@ def run_tasks(config):
 
         if task is Task.INFERENCE:
             pl = model_loader.get_pipeline(config, model, tokenizer)
-            run_inference(config, pl, test_dataset, task_idx=i)
+            run_inference(config, pl, dataset['test'], task_idx=i)
         elif task is Task.MULTILANG:
             pl = model_loader.get_pipeline(config, model, tokenizer)
-            run_multitask(config, pl, multilang_test, task_idx=i)
+            run_multitask(config, pl, dataset['test'], task_idx=i)
         elif task is Task.VALIDATE:
             pl = model_loader.get_pipeline(config, model, tokenizer)
-            run_inference(config, pl, validation_dataset, task_idx=i)
+            run_inference(config, pl, dataset['validation'], task_idx=i)
         elif task is Task.FINETUNE:
-            run_finetune(config, model, tokenizer, train_dataset, validation_dataset)
+            run_finetune(config, model, tokenizer, dataset['train'], dataset['validation'])
         else:            
             raise ValueError(f'Incorrect value of {task=}\ntask must be instance of Task enum')
 
