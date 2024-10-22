@@ -51,9 +51,9 @@ def _prepare_instruction_text(example, *, tokenizer, config, few_shot_datasets):
         },
     ]
 
-    if config.dataset_loader_config.get('n_shots', None) and example.get('subject', None):
+    if config.get('n_shots', None) and example.get('subject', None):
         few_shot_dataset = few_shot_datasets[example['subject']]
-        few_shot_dataset = few_shot_dataset.select(range(config.dataset_loader_config['n_shots']))
+        few_shot_dataset = few_shot_dataset.select(range(config['n_shots']))
     else:
         few_shot_dataset = None
     
@@ -88,9 +88,7 @@ def _multilang_get_choices(example):
 
 
 def load_MMLU(config, tokenizer) -> DatasetDict:
-    dataset_loader_config = config.dataset_loader_config
-
-    mmlu_dataset =  load_dataset("cais/mmlu", dataset_loader_config.task_name)
+    mmlu_dataset =  load_dataset("cais/mmlu", 'all')
 
     few_shot_datasets = {
         subject: mmlu_dataset['dev'].filter(lambda row: row['subject'] == subject)
@@ -105,7 +103,7 @@ def load_MMLU(config, tokenizer) -> DatasetDict:
             few_shot_datasets=few_shot_datasets,
         ),
         batched=False, 
-        num_proc=dataset_loader_config.num_proc,
+        num_proc=config.num_proc,
     )
 
     instructions_datasets['validation'] = instructions_datasets['validation'].map(
@@ -125,13 +123,12 @@ def load_MMLU(config, tokenizer) -> DatasetDict:
 
 
 def load_multilang_MMLU(config, tokenizer) -> DatasetDict:
-    dataset_loader_config = config.dataset_loader_config
     langs = config.get('MMMLU_langs', list())
 
     if not langs:
         raise ValueError('Languages not specified')
 
-    if dataset_loader_config.get('n_shots', 0) != 0:
+    if config.get('n_shots', 0) != 0:
         raise ValueError('Incorrect value of n_shots')
 
     multilang_mmlu_dataset = DatasetDict()
@@ -152,7 +149,7 @@ def load_multilang_MMLU(config, tokenizer) -> DatasetDict:
             few_shot_datasets=None,
         ),
         batched=False, 
-        num_proc=dataset_loader_config.num_proc,
+        num_proc=config.num_proc,
     )
 
     multilang_mmlu_dataset = multilang_mmlu_dataset.map(

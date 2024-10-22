@@ -2,3 +2,18 @@ model_name: meta-llama/Meta-Llama-3-8B-Instruct
 tokenizer_config:
   padding_side: left
 num_proc: 1
+MMMLU_langs:
+- AR_XY
+- BN_BD
+- DE_DE
+- ES_LA
+- FR_FR
+- HI_IN
+- ID_ID
+- IT_IT
+- JA_JP
+- KO_KR
+- PT_BR
+- SW_KE
+- YO_NG
+- ZH_CN
