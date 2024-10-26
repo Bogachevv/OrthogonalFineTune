@@ -180,8 +180,10 @@ def generate(config_pth, out_dir, ds_name: str, n_shots: int):
     config['n_shots'] = n_shots
 
     if ds_name == 'MMLU':
+        print(f'Loading MMLU')
         dataset = load_MMLU(config, tokenizer)
     elif ds_name == 'MMMLU':
+        print(f'Loading MMMLU')
         dataset = load_multilang_MMLU(config, tokenizer)
     else:
         raise ValueError(f"Incorrect {ds_name=}")

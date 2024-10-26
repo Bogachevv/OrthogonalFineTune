@@ -4,6 +4,7 @@ import pandas as pd
 import torch
 from torch import nn
 import torch.nn.functional as F
+from datasets import DatasetDict, Dataset
 
 from omegaconf import OmegaConf
 
@@ -13,7 +14,7 @@ import categories
 def _inference_model(eval_cfg, pl, test_dataset):
     model_preds = []
 
-    with torch.inference_mode(), torch.cuda.amp.autocast():
+    with torch.inference_mode(), torch.amp.autocast('cuda'):
         for i, split in enumerate(np.array_split(np.arange(len(test_dataset)), eval_cfg.num_splits)):
             print(f"Run {i} with split [{split[0]}, {split[-1]}]", flush=True)
 
@@ -49,21 +50,18 @@ def _process_prediction(pred):
     return pred
 
 
-def _preds_to_df(model_preds, test_dataset):
-    preds_df = pd.DataFrame(model_preds)
-
-    if 'subject' in test_dataset:
-        preds_df['subject'] = test_dataset['subject']
-        preds_df['category'] = preds_df['subject'].apply(lambda subcat: categories.subcat_to_cat.get(subcat, None))
-    
-    preds_df['pred'] = preds_df.apply(_process_prediction, axis=1)
-    preds_df['true'] = list(map(lambda v: chr(v + ord('A')), test_dataset['answer']))
-    preds_df['corr'] = (preds_df['pred'] == preds_df['true']).astype(np.int32)
+def _preds_to_df(model_preds, test_dataset: Dataset):
+    preds_df: pd.DataFrame = test_dataset.to_pandas()
+    preds_df.insert(
+        loc=len(preds_df.columns),
+        column='model_pred',
+        value=model_preds
+    )
 
     return preds_df
 
 
-def make_preds(config, pl, test_dataset):
+def make_preds(config, pl, test_dataset: Dataset):
     eval_cfg = config.evaluation_config
     
     model_preds = _inference_model(eval_cfg, pl, test_dataset)
