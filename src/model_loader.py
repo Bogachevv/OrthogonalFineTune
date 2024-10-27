@@ -6,7 +6,7 @@ import transformers
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from transformers import pipeline
 from transformers.modeling_utils import load_sharded_checkpoint
-from peft import get_peft_model, PeftConfig, LoraConfig, BOFTConfig, PeftModel, TaskType
+from peft import get_peft_model, PeftConfig, LoraConfig, BOFTConfig, VeraConfig, PeftModel, TaskType
 
 from gsoft_tmp_injector import inject_gsoft
 
@@ -84,6 +84,12 @@ def _get_peft_part(config, model, ft_strategy):
             task_type=TaskType.CAUSAL_LM,
             inference_mode=not config.adapter_config.peft_is_trainable,
             **OmegaConf.to_object(config.adapter_config.BOFT_config)
+        )
+    elif ft_strategy == 'VeRA':
+        adapter_config = VeraConfig(
+            task_type=TaskType.CAUSAL_LM,
+            inference_mode=not config.adapter_config.peft_is_trainable,
+            **OmegaConf.to_object(config.adapter_config.VeRA_config)
         )
     else:
         raise ValueError('Incorrect FT type')
