@@ -14,9 +14,10 @@ def _get_BoolQ_instructions(example, tokenizer):
         {"role": "system", "content": f"Please answer the following question with True or False. Follow the answer format, full answer not needed."},
         {"role": "user", "content": f"Question: {example['question']}\nAnswer format: True/False"},
     ]
+    correct_answer = example['answer']
 
     instructions_ans = [
-        {"role": "assistant", "content": f"The correct answer is {example['answer']}"}
+        {"role": "assistant", "content": f"The correct answer is {correct_answer}"}
     ]
     instructions_wa = [
         {"role": "assistant", "content": f"The correct answer is "}
@@ -33,7 +34,7 @@ def _get_BoolQ_instructions(example, tokenizer):
     )
     text_wa_answer = text_wa_answer.rsplit('<|eot_id|>', 1)[0]
     
-    return {'text': text, 'text_wa_answer': text_wa_answer}
+    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': correct_answer}
 
 
 def _get_PIQA_instructions(example, tokenizer):
@@ -41,9 +42,10 @@ def _get_PIQA_instructions(example, tokenizer):
         {"role": "system", "content": f"Please choose the correct solution to the question. Follow the answer format, full answer not needed."},
         {"role": "user", "content": f"Question: {example['goal']}\nSolution1: {example['sol1']}\nSolution2: {example['sol2']}\nAnswer format: Solution1/Solution2"},
     ]
+    correct_answer = f"Solution{example['label']+1}"
 
     instructions_ans = [
-        {"role": "assistant", "content": f"The correct answer is Solution{example['label']+1}"}
+        {"role": "assistant", "content": f"The correct answer is {correct_answer}"}
     ]
     instructions_wa = [
         {"role": "assistant", "content": f"The correct answer is "}
@@ -60,7 +62,7 @@ def _get_PIQA_instructions(example, tokenizer):
     )
     text_wa_answer = text_wa_answer.rsplit('<|eot_id|>', 1)[0]
     
-    return {'text': text, 'text_wa_answer': text_wa_answer}
+    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': correct_answer}
 
 
 def _get_SIQA_instructions(example, tokenizer):
@@ -68,9 +70,10 @@ def _get_SIQA_instructions(example, tokenizer):
         {"role": "system", "content": f"Please choose the correct answer to the question based on the context provided. Follow the answer format, full answer not needed."},
         {"role": "user", "content": f"Context: {example['context']}\nQuestion: {example['question']}\nA: {example['answerA']}\nB: {example['answerB']}\nC: {example['answerC']}\nAnswer format: A/B/C"},
     ]
+    correct_answer = f"{chr(int(example['label']) + ord('A') - 1)}"
 
     instructions_ans = [
-        {"role": "assistant", "content": f"The correct answer is {chr(int(example['label']) + ord('A') - 1)}"}
+        {"role": "assistant", "content": f"The correct answer is {correct_answer}"}
     ]
     instructions_wa = [
         {"role": "assistant", "content": f"The correct answer is "}
@@ -87,7 +90,7 @@ def _get_SIQA_instructions(example, tokenizer):
     )
     text_wa_answer = text_wa_answer.rsplit('<|eot_id|>', 1)[0]
     
-    return {'text': text, 'text_wa_answer': text_wa_answer}
+    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': correct_answer}
 
 
 def _get_hellaswag_instructions(example, tokenizer):
@@ -100,9 +103,10 @@ def _get_hellaswag_instructions(example, tokenizer):
         {"role": "system", "content": f"Please choose the correct ending to complete the given sentence. Follow the answer format, full answer not needed."},
         {"role": "user", "content": f"{example['activity_label']}. {example['ctx']}\n{endings}\nAnswer format: Ending0/Ending1/Ending2/Ending3"},
     ]
+    correct_answer = f"Ending{example['label']}"
 
     instructions_ans = [
-        {"role": "assistant", "content": f"The correct answer is Ending{example['label']}"}
+        {"role": "assistant", "content": f"The correct answer is {correct_answer}"}
     ]
     instructions_wa = [
         {"role": "assistant", "content": f"The correct answer is "}
@@ -119,7 +123,7 @@ def _get_hellaswag_instructions(example, tokenizer):
     )
     text_wa_answer = text_wa_answer.rsplit('<|eot_id|>', 1)[0]
     
-    return {'text': text, 'text_wa_answer': text_wa_answer}
+    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': correct_answer}
 
 
 def _get_winogrande_instructions(example, tokenizer):
@@ -127,9 +131,10 @@ def _get_winogrande_instructions(example, tokenizer):
         {"role": "system", "content": f"Please choose the correct answer to fill in the blank to complete the given sentence. Follow the answer format, full answer not needed."},
         {"role": "user", "content": f"Sentence: {example['sentence']}\nOption1: {example['option1']}\nOption2: {example['option2']}\nAnswer format: Option1/Option2"},
     ]
+    correct_answer = f"Option{example['answer']}"
 
     instructions_ans = [
-        {"role": "assistant", "content": f"The correct answer is Option{example['answer']}"}
+        {"role": "assistant", "content": f"The correct answer is {correct_answer}"}
     ]
     instructions_wa = [
         {"role": "assistant", "content": f"The correct answer is "}
@@ -146,7 +151,7 @@ def _get_winogrande_instructions(example, tokenizer):
     )
     text_wa_answer = text_wa_answer.rsplit('<|eot_id|>', 1)[0]
     
-    return {'text': text, 'text_wa_answer': text_wa_answer}
+    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': correct_answer}
 
 
 def _get_ARC_instructions(example, tokenizer):
@@ -163,9 +168,10 @@ def _get_ARC_instructions(example, tokenizer):
         {"role": "system", "content": f"Please choose the correct answer to the question. Follow the answer format, full answer not needed."},
         {"role": "user", "content": f"Question: {example['question']}\n{answers}\nAnswer format: {ans_format}"},
     ]
+    correct_answer = f"{example['answerKey']}"
 
     instructions_ans = [
-        {"role": "assistant", "content": f"The correct answer is {example['answerKey']}"}
+        {"role": "assistant", "content": f"The correct answer is {correct_answer}"}
     ]
     instructions_wa = [
         {"role": "assistant", "content": f"The correct answer is "}
@@ -182,7 +188,7 @@ def _get_ARC_instructions(example, tokenizer):
     )
     text_wa_answer = text_wa_answer.rsplit('<|eot_id|>', 1)[0]
     
-    return {'text': text, 'text_wa_answer': text_wa_answer}
+    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': correct_answer}
 
 
 def _get_OBQA_instructions(example, tokenizer):
@@ -199,9 +205,10 @@ def _get_OBQA_instructions(example, tokenizer):
         {"role": "system", "content": f"Please choose the correct answer to the question. Follow the answer format, full answer not needed."},
         {"role": "user", "content": f"Question: {example['question_stem']}\n{answers}\nAnswer format: {ans_format}"},
     ]
+    correct_answer = f"{example['answerKey']}"
 
     instructions_ans = [
-        {"role": "assistant", "content": f"The correct answer is {example['answerKey']}"}
+        {"role": "assistant", "content": f"The correct answer is {correct_answer}"}
     ]
     instructions_wa = [
         {"role": "assistant", "content": f"The correct answer is "}
@@ -219,7 +226,7 @@ def _get_OBQA_instructions(example, tokenizer):
     )
     text_wa_answer = text_wa_answer.rsplit('<|eot_id|>', 1)[0]
     
-    return {'text': text, 'text_wa_answer': text_wa_answer}
+    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': correct_answer}
 
 
 def _load_datasets(config) -> list[DatasetDict]:
