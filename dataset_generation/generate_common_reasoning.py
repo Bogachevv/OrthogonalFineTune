@@ -296,12 +296,12 @@ def _generate_dataset(config, tokenizer) -> DatasetDict:
     dataset_ls = _process_datasets(config=config, dataset_ls=dataset_ls, tokenizer=tokenizer)
 
     train_dataset = datasets.concatenate_datasets([
-        dataset['train'].select_columns(['task', 'text', 'text_wa_answer'])
+        dataset['train'].select_columns(['task', 'text', 'text_wa_answer', 'correct_answer'])
         for dataset in dataset_ls
     ])
 
     validation_dataset = datasets.concatenate_datasets([
-        dataset['validation'].select_columns(['task', 'text', 'text_wa_answer'])
+        dataset['validation'].select_columns(['task', 'text', 'text_wa_answer', 'correct_answer'])
         for dataset in dataset_ls
     ])
 
