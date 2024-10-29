@@ -34,7 +34,7 @@ def _get_BoolQ_instructions(example, tokenizer):
     )
     text_wa_answer = text_wa_answer.rsplit('<|eot_id|>', 1)[0]
     
-    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': correct_answer}
+    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': str(correct_answer)}
 
 
 def _get_PIQA_instructions(example, tokenizer):
@@ -62,7 +62,7 @@ def _get_PIQA_instructions(example, tokenizer):
     )
     text_wa_answer = text_wa_answer.rsplit('<|eot_id|>', 1)[0]
     
-    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': correct_answer}
+    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': str(correct_answer)}
 
 
 def _get_SIQA_instructions(example, tokenizer):
@@ -90,7 +90,7 @@ def _get_SIQA_instructions(example, tokenizer):
     )
     text_wa_answer = text_wa_answer.rsplit('<|eot_id|>', 1)[0]
     
-    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': correct_answer}
+    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': str(correct_answer)}
 
 
 def _get_hellaswag_instructions(example, tokenizer):
@@ -123,7 +123,7 @@ def _get_hellaswag_instructions(example, tokenizer):
     )
     text_wa_answer = text_wa_answer.rsplit('<|eot_id|>', 1)[0]
     
-    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': correct_answer}
+    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': str(correct_answer)}
 
 
 def _get_winogrande_instructions(example, tokenizer):
@@ -151,7 +151,7 @@ def _get_winogrande_instructions(example, tokenizer):
     )
     text_wa_answer = text_wa_answer.rsplit('<|eot_id|>', 1)[0]
     
-    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': correct_answer}
+    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': str(correct_answer)}
 
 
 def _get_ARC_instructions(example, tokenizer):
@@ -188,7 +188,7 @@ def _get_ARC_instructions(example, tokenizer):
     )
     text_wa_answer = text_wa_answer.rsplit('<|eot_id|>', 1)[0]
     
-    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': correct_answer}
+    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': str(correct_answer)}
 
 
 def _get_OBQA_instructions(example, tokenizer):
@@ -226,7 +226,7 @@ def _get_OBQA_instructions(example, tokenizer):
     )
     text_wa_answer = text_wa_answer.rsplit('<|eot_id|>', 1)[0]
     
-    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': correct_answer}
+    return {'text': text, 'text_wa_answer': text_wa_answer, 'correct_answer': str(correct_answer)}
 
 
 def _load_datasets(config) -> list[DatasetDict]:
