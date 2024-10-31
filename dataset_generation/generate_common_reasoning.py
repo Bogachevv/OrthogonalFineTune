@@ -251,6 +251,30 @@ def _load_datasets(config) -> list[DatasetDict]:
     ]
 
 
+def _add_answer_column(dataset: DatasetDict, dataset_name: str) -> DatasetDict:
+    column_names = {
+        'BoolQ': 'answer',
+        'PIQA': 'label',
+        'SIQA': 'label',
+        'hellaswag': 'label',
+        'winogrande': 'answer',
+        'ARC-E': 'answerKey',
+        'ARC-C': 'answerKey',
+        'OBQA': 'answerKey',
+    }
+
+    ans_col = column_names[dataset_name]
+    assert ans_col in dataset['validation'].features
+
+    if ans_col not in dataset['test'].features:
+        dataset['test'] = dataset['test'].add_column(
+            name=ans_col,
+            column='NO_ANSWER' * len(dataset['test'])
+        )
+
+    return dataset
+
+
 def _process_datasets(config, dataset_ls: list[DatasetDict], tokenizer) -> list[DatasetDict]:
     dataset_processors = (
         _get_BoolQ_instructions,
