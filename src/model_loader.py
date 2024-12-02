@@ -61,6 +61,22 @@ def load_model(config):
     return model
 
 
+def get_total_parameters(model):
+    return sum(p.numel() for p in model.parameters())
+
+
+def get_trainable_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+def print_num_trainable(model):
+    total_params = get_total_parameters(model)
+    trainable_params = get_trainable_parameters(model)
+    frac = (float(trainable_params) / total_params) * 100
+    
+    print(f"trainable: {trainable_params}  |  total: {total_params}  |  trainable(%): {frac:.6f}")
+
+
 def _get_peft_part(config, model, ft_strategy):
     if ft_strategy == 'GSOFT':
         # TODO: Implement PEFT model instead of custom injection
@@ -100,14 +116,34 @@ def _get_peft_part(config, model, ft_strategy):
     return model_adapter
 
 
+def _unfreeze_layernorm(config, model):
+    if not config.adapter_config.get('unfreeze_layernorm', False):
+        return
+
+    for name, param in model.named_parameters():
+        if 'norm' in name:
+            param.requires_grad = True
+
+
+# def init_bias(config, model):
+#     pass
+
+
+# def unfreeze_bias(config, model):
+#     pass
+
+
 def _get_peft_new(config, model):
     ft_strategy_ls = config.adapter_config.ft_strategy
     ft_strategy_ls = [ft_strategy_ls] if isinstance(ft_strategy_ls, str) else ft_strategy_ls
     
     model_adapter = model
     for ft_strategy in ft_strategy_ls:
-        model_adapter = _get_peft_part(config, model, ft_strategy=ft_strategy)
+        model_adapter = _get_peft_part(config, model_adapter, ft_strategy=ft_strategy)
 
+    _unfreeze_layernorm(config, model)
+    
+    print_num_trainable(model_adapter)
     return model_adapter    
 
 
