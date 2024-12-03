@@ -16,10 +16,13 @@ class Task(Enum):
 
 
 def run_finetune(config, model, tokenizer, train_dataset, val_dataset):
+    max_shard_size = config.get('save_shard_size', '5GB')
+    print(f"Max shard size: {max_shard_size}")
+    
     trainer = finetune.get_trainer(config, model, tokenizer, train_dataset, val_dataset)
     trainer.train()
 
-    model.save_pretrained(config.adapter_config.peft_pretrained_path)
+    model.save_pretrained(config.adapter_config.peft_pretrained_path, max_shard_size=max_shard_size)
     tokenizer.save_pretrained(config.adapter_config.peft_pretrained_path)
 
 def run_inference(config, pl, test_dataset, task_idx=None, path: str = None):

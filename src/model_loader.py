@@ -155,12 +155,16 @@ def _get_peft_pretrained(config, model):
 
         model = _get_peft_new(config, model)
 
-        res = load_sharded_checkpoint(
+        load_info = load_sharded_checkpoint(
             model=model,
             folder=adapter_pth,
+            strict=False
         ) 
 
-        print(res)
+        print(load_info)
+
+        if len(load_info.missing_keys) - ('lm_head.weight' in load_info.missing_keys) + len(load_info.unexpected_keys) > 0:
+            raise RuntimeError("Can't load model")
 
         return model
 
