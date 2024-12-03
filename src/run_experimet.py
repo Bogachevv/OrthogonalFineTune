@@ -19,8 +19,19 @@ def run_finetune(config, model, tokenizer, train_dataset, val_dataset):
     max_shard_size = config.get('save_shard_size', '5GB')
     print(f"Max shard size: {max_shard_size}")
     
+    merge_adapters = config.adapter_config.get('merge_tuned', False)
+    if merge_adapters:
+        # Checking for merge support. If not supported, the exception will be raised here
+        model.merge_and_unload
+
     trainer = finetune.get_trainer(config, model, tokenizer, train_dataset, val_dataset)
     trainer.train()
+
+    if merge_adapters:
+        model.merge_and_unload(
+            progressbar=True,
+            safe_merge=True
+        )
 
     model.save_pretrained(config.adapter_config.peft_pretrained_path, max_shard_size=max_shard_size)
     tokenizer.save_pretrained(config.adapter_config.peft_pretrained_path)
