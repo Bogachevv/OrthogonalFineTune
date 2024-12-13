@@ -36,8 +36,15 @@ class GSOFTLinear(nn.Module, BaseTunerLayer):
         if self.scale:
             self.gsoft_s = nn.Parameter(base_tensor.new_ones(out_features, dtype=torch.float32))
         
+        self._enabled = True
+
+    def enable_adapters(self, enable: bool = True):
+        self._enabled = enable
 
     def forward(self, x: torch.Tensor):
+        if not self._enabled:
+            return self.pre_layer(x)
+
         if self.is_left:
             x = self.gs_ort(x)
             x = F.linear(x, self.pre_layer.weight)
