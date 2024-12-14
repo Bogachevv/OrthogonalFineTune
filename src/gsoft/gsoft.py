@@ -59,3 +59,27 @@ class GSOFTLinear(nn.Module, BaseTunerLayer):
             x = x + self.pre_layer.bias
         
         return x
+
+    def merge(self) -> nn.Linear:
+        """
+        merge may destruct GSOFTLinear structure. Do not use this layer after merging 
+        """
+        in_shape, out_shape = self.in_features, self.out_features
+        W_0: torch.Tensor = self.pre_layer.weight.data
+
+        if self.is_left:
+            I = torch.eye(in_shape, dtype=W_0.dtype, device=W_0.device)
+            Q = self.gs_ort(I).transpose(0, 1)
+            W = torch.mm(W_0, Q)
+        else:
+            I = torch.eye(out_shape, dtype=W_0.dtype, device=W_0.device)
+            Q = self.gs_ort(I).transpose(0, 1) 
+            W = torch.mm(Q, W_0)
+        
+        if self.scale is not None:
+            W.mul_(self.gsoft_s.unsqueeze(1))
+        
+        self.pre_layer.weight.data = W
+        del W_0
+
+        return self.pre_layer
