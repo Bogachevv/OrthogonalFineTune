@@ -69,14 +69,14 @@ class GSOFTModel(BaseTuner):
                 whether to activate the safe merging check to check if there is any potential Nan in the adapter weights
         """
 
-        raise NotImplementedError("merge_and_unload not implemented")
+        return self._unload_and_optionally_merge(merge=True, progressbar=progressbar, safe_merge=safe_merge)
 
     def unload(self):
         """
         Gets back the base model by removing all the lora modules without merging. This gives back the original base model.
         """
         
-        raise NotImplementedError("unload not implemented")
+        return self._unload_and_optionally_merge(merge=False)
 
     def _set_adapter_layers(self, enabled: bool = True) -> None:
         for module in self.model.modules():
@@ -185,6 +185,26 @@ class GSOFTModel(BaseTuner):
                 # adding an additional adapter: it is not automatically trainable
                 new_module.requires_grad_(False)
             self._replace_module(parent, target_name, new_module, target)
+
+    def _unload_and_optionally_merge(
+        self,
+        merge=True,
+        progressbar: bool = False,
+        safe_merge: bool = False,
+    ):
+        desc = "Unloading " + ("and merging " if merge else "") + "model"
+        named_modules = list(filter(
+            lambda p: isinstance(p[1], GSOFTLinear),
+            self.named_modules()
+        ))
+
+        for name, gs_linear in tqdm(named_modules, disable=not progressbar, desc=desc):
+            parent, target, target_name = _get_submodules(self.model, name)
+            
+            new_module = gs_linear.merge() if merge else gs_linear.pre_layer
+            self._replace_module(parent, target_name, new_module, target)
+        
+        return self.model
 
     def _replace_module(self, parent, child_name, new_module: GSOFTLinear, child):
         setattr(parent, child_name, new_module)
