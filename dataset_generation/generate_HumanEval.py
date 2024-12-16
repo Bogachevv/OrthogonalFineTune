@@ -25,7 +25,7 @@ def prepare_prompt(example, tokenizer):
         add_generation_prompt=True,
     )
 
-    return {'text': text}
+    return {'text_wa_answer': text}
 
 
 def _generate_dataset(config, tokenizer) -> DatasetDict:
