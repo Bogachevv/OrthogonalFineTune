@@ -53,7 +53,7 @@ def inject_gsoft(gsoft_config, model):
 
     use_bias = gsoft_config.get('bias', None)
     bias_target_cfg = None
-    if isinstance(use_bias, list) or isinstance(use_bias, str):
+    if not isinstance(use_bias, bool) and use_bias is not None:
         bias_target_cfg = collections.namedtuple('Config', field_names=['target_modules'])(target_modules=use_bias)
 
     for name, module in model_adapter.named_modules():
