@@ -5,6 +5,8 @@ import torch.nn.functional as F
 from peft.tuners.tuners_utils import BaseTuner, BaseTunerLayer, check_target_module_exists, onload_layer
 from peft.utils import _get_submodules
 
+import collections
+
 import tqdm
 
 from gsoft import GSOFTLinear
@@ -49,12 +51,21 @@ def inject_gsoft(gsoft_config, model):
         for param_name, param in model_adapter.named_parameters():
             param.requires_grad = False
 
+    use_bias = gsoft_config.get('bias', None)
+    bias_target_cfg = None
+    if isinstance(use_bias, list) or isinstance(use_bias, str):
+        bias_target_cfg = collections.namedtuple('Config', field_names=['target_modules'])(target_modules=use_bias)
+
     for name, module in model_adapter.named_modules():
         if not check_target_module_exists(gsoft_config, name):
             continue
 
         if not isinstance(module, nn.Linear):
             continue
+
+        module_use_bias = use_bias
+        if bias_target_cfg is not None:
+            module_use_bias = check_target_module_exists(bias_target_cfg, name)
 
         out_f, in_f = module.weight.shape
         kwargs = {
@@ -63,7 +74,7 @@ def inject_gsoft(gsoft_config, model):
             'method': gsoft_config.method,
             'block_size': gsoft_config.get('block_size', None),
             'scale': gsoft_config.scale,
-            'bias': gsoft_config.get('bias', False),
+            'use_bias': module_use_bias,
         }
 
         gs_side = gsoft_config.get('side', 'left')
