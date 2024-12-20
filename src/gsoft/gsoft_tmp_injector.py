@@ -63,6 +63,7 @@ def inject_gsoft(gsoft_config, model):
             'method': gsoft_config.method,
             'block_size': gsoft_config.get('block_size', None),
             'scale': gsoft_config.scale,
+            'bias': gsoft_config.get('bias', False),
         }
 
         gs_side = gsoft_config.get('side', 'left')

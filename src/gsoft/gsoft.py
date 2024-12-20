@@ -18,7 +18,8 @@ class GSOFTLinear(nn.Module, BaseTunerLayer):
             block_size = None,
             scale: bool = True,
             is_left: bool = True,
-            ):
+            bias: bool = False,
+        ):
 
         super().__init__()
 
@@ -27,7 +28,11 @@ class GSOFTLinear(nn.Module, BaseTunerLayer):
         self.out_features = out_features
         self.nblocks = nblocks
         self.scale = scale
+        self.bias = bias
         self.is_left = is_left
+
+        self.gsoft_s = None
+        self.gsoft_bias = None
 
         base_tensor = pre_layer.weight
         gs_features = in_features if is_left else out_features
@@ -36,6 +41,9 @@ class GSOFTLinear(nn.Module, BaseTunerLayer):
         if self.scale:
             self.gsoft_s = nn.Parameter(base_tensor.new_ones(out_features, dtype=torch.float32))
         
+        if self.bias:
+            self.gsoft_bias = nn.Parameter(base_tensor.new_zeros(out_features, dtype=torch.float32))
+
         self._enabled = True
 
     def enable_adapters(self, enable: bool = True):
@@ -58,6 +66,9 @@ class GSOFTLinear(nn.Module, BaseTunerLayer):
         if self.pre_layer.bias is not None:
             x = x + self.pre_layer.bias
         
+        if self.bias:
+            x = x + self.gsoft_bias
+
         return x
 
     def merge(self) -> nn.Linear:
@@ -66,6 +77,9 @@ class GSOFTLinear(nn.Module, BaseTunerLayer):
         """
         in_shape, out_shape = self.in_features, self.out_features
         W_0: torch.Tensor = self.pre_layer.weight.data
+
+        if self.bias:
+            raise NotImplementedError
 
         if self.is_left:
             I = torch.eye(in_shape, dtype=W_0.dtype, device=W_0.device)
