@@ -82,12 +82,12 @@ class GSOFTLinear(nn.Module, BaseTunerLayer):
             raise NotImplementedError
 
         if self.is_left:
-            I = torch.eye(in_shape, dtype=W_0.dtype, device=W_0.device)
-            Q = self.gs_ort(I).transpose(0, 1)
+            I = torch.eye(in_shape, dtype=torch.float32, device=W_0.device)
+            Q = self.gs_ort(I).to(dtype=W_0.dtype).transpose(0, 1)
             W = torch.mm(W_0, Q)
         else:
-            I = torch.eye(out_shape, dtype=W_0.dtype, device=W_0.device)
-            Q = self.gs_ort(I).transpose(0, 1) 
+            I = torch.eye(out_shape, dtype=torch.float32, device=W_0.device)
+            Q = self.gs_ort(I).to(dtype=W_0.dtype).transpose(0, 1) 
             W = torch.mm(Q, W_0)
         
         if self.scale is not None:
