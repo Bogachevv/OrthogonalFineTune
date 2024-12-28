@@ -90,7 +90,7 @@ class GSOFTLinear(nn.Module, BaseTunerLayer):
             Q = self.gs_ort(I).to(dtype=W_0.dtype).transpose(0, 1) 
             W = torch.mm(Q, W_0)
         
-        if self.scale is not None:
+        if self.scale:
             W.mul_(self.gsoft_s.unsqueeze(1))
         
         self.pre_layer.weight.data = W

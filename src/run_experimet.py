@@ -28,7 +28,7 @@ def run_finetune(config, model, tokenizer, train_dataset, val_dataset):
     trainer.train()
 
     if merge_adapters:
-        model.merge_and_unload(
+        model = model.merge_and_unload(
             progressbar=True,
             safe_merge=True
         )
