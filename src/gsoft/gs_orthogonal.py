@@ -27,11 +27,13 @@ class GSOrthogonal(nn.Module):
         super().__init__()
 
         if base_tensor is None:
-            self.gsoft_R = nn.Parameter(torch.empty(nblocks, n // nblocks, n // nblocks))
-            self.gsoft_L = nn.Parameter(torch.empty(nblocks, n // nblocks, n // nblocks))
+            self.gsoft_A = nn.Parameter(torch.empty(nblocks, n // nblocks, n // nblocks, dtype=torch.float32))
+            # self.gsoft_R = nn.Parameter(torch.empty(nblocks, n // nblocks, n // nblocks))
+            # self.gsoft_L = nn.Parameter(torch.empty(nblocks, n // nblocks, n // nblocks))
         else:
-            self.gsoft_R = nn.Parameter(base_tensor.new_empty(nblocks, n // nblocks, n // nblocks, dtype=torch.float32))
-            self.gsoft_L = nn.Parameter(base_tensor.new_empty(nblocks, n // nblocks, n // nblocks, dtype=torch.float32))
+            self.gsoft_A = nn.Parameter(base_tensor.new_empty(nblocks, n // nblocks, n // nblocks, dtype=torch.float32))
+            # self.gsoft_R = nn.Parameter(base_tensor.new_empty(nblocks, n // nblocks, n // nblocks, dtype=torch.float32))
+            # self.gsoft_L = nn.Parameter(base_tensor.new_empty(nblocks, n // nblocks, n // nblocks, dtype=torch.float32))
 
         self.orthogonal = orthogonal
         self.n = n
@@ -43,15 +45,17 @@ class GSOrthogonal(nn.Module):
 
         self.reset_parameters()
 
+    @torch.no_grad()
     def reset_parameters(self):
         # initialize whole layer as identity matrix
 
         if self.orthogonal:
-            torch.nn.init.zeros_(self.gsoft_L)
-            torch.nn.init.zeros_(self.gsoft_R)
-
+            torch.nn.init.zeros_(self.gsoft_A)
+            # torch.nn.init.zeros_(self.gsoft_L)
+            # torch.nn.init.zeros_(self.gsoft_R)
         else:
             block_size = self.n // self.nblocks
+            raise NotImplementedError("Not supported with new parametrization")
             self.gsoft_L.data = torch.eye(block_size).unsqueeze(0).expand(self.nblocks, block_size, block_size)
             self.gsoft_R.data = torch.eye(block_size).unsqueeze(0).expand(self.nblocks, block_size, block_size)
     
@@ -70,18 +74,24 @@ class GSOrthogonal(nn.Module):
         return Q
     
     def forward(self, x):
+        gsoft_L = torch.triu(self.gsoft_A)
+        gsoft_R = torch.tril(self.gsoft_A)
 
         if self.orthogonal:
             if self.method == "cayley":
-                L = self.cayley_batch(self.gsoft_L)
-                R = self.cayley_batch(self.gsoft_R)
+                L = self.cayley_batch(gsoft_L)
+                R = self.cayley_batch(gsoft_R)
             elif self.method == "exp":
-                L = self.exp_full(self.gsoft_L)
-                R = self.exp_full(self.gsoft_R)
+                L = self.exp_full(gsoft_L)
+                R = self.exp_full(gsoft_R)
             else:
-                raise NotImplementedError("Method is not supported. Use 'cayley' or 'exp'.")
+                raise NotImplementedError(f"Method {self.method} is not supported. Use 'cayley' or 'exp'.")
         else:
+            raise NotImplementedError("Not supported with new parametrization") 
             L = self.gsoft_L
             R = self.gsoft_R
 
         return self.blockdiag_butterfly_multiply(x, R, L)
+
+    def __repr__(self):
+        return f"GSOrthogonal(n={self.n}, nblocks={self.nblocks}, orthogonal={self.orthogonal}, method={self.method}, block_size={self.block_size})"
