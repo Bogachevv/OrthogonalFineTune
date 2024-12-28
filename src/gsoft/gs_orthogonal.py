@@ -23,6 +23,8 @@ class GSOrthogonal(nn.Module):
             nblocks = n // block_size
 
         assert n % nblocks == 0
+        if not orthogonal:
+            raise ValueError("orthogonal == False deprecated")
 
         super().__init__()
 
@@ -54,10 +56,7 @@ class GSOrthogonal(nn.Module):
             # torch.nn.init.zeros_(self.gsoft_L)
             # torch.nn.init.zeros_(self.gsoft_R)
         else:
-            block_size = self.n // self.nblocks
-            raise NotImplementedError("Not supported with new parametrization")
-            self.gsoft_L.data = torch.eye(block_size).unsqueeze(0).expand(self.nblocks, block_size, block_size)
-            self.gsoft_R.data = torch.eye(block_size).unsqueeze(0).expand(self.nblocks, block_size, block_size)
+            raise ValueError("orthogonal == False deprecated")
     
     def exp_full(self, data):
         skew = 0.5 * (data - data.transpose(1, 2))
@@ -87,9 +86,7 @@ class GSOrthogonal(nn.Module):
             else:
                 raise NotImplementedError(f"Method {self.method} is not supported. Use 'cayley' or 'exp'.")
         else:
-            raise NotImplementedError("Not supported with new parametrization") 
-            L = self.gsoft_L
-            R = self.gsoft_R
+            raise ValueError("orthogonal == False deprecated")
 
         return self.blockdiag_butterfly_multiply(x, R, L)
 
