@@ -59,13 +59,15 @@ class GSOrthogonal(nn.Module):
             raise ValueError("orthogonal == False deprecated")
     
     def exp_full(self, data):
-        skew = 0.5 * (data - data.transpose(1, 2))
+        # skew = 0.5 * (data - data.transpose(1, 2))
+        skew = data - data.transpose(1, 2)
         return torch.matrix_exp(skew)
 
     def cayley_batch(self, data):
         b, r, c = data.shape
         # Ensure the input matrix is skew-symmetric
-        skew = 0.5 * (data - data.transpose(1, 2))
+        # skew = 0.5 * (data - data.transpose(1, 2))
+        skew = data - data.transpose(1, 2)
         I = torch.eye(r, device=data.device).unsqueeze(0).expand(b, r, c)
 
         # Perform the Cayley parametrization
