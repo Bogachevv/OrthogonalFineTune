@@ -347,7 +347,7 @@ def _load_tokenizer(config):
     return tokenizer
 
 
-def load_and_process_task(config, tokenizer, task_name: str):
+def _load_and_process_task(config, tokenizer, task_name: str):
     dataset_loader = {
         'BoolQ':      lambda: load_dataset('google/boolq'),
         'PIQA':       lambda: load_dataset('ybisk/piqa', trust_remote_code=True),
@@ -383,8 +383,8 @@ def load_and_process_task(config, tokenizer, task_name: str):
         num_proc=config.num_proc,
     )
 
-    train_dataset =      dataset['train'].select_columns(['task', 'text', 'text_wa_answer', 'correct_answer'])
-    validation_dataset = dataset['validation'].select_columns(['task', 'text', 'text_wa_answer', 'correct_answer'])
+    train_dataset =      dataset['train'].select_columns(['text', 'text_wa_answer', 'correct_answer'])
+    validation_dataset = dataset['validation'].select_columns(['text', 'text_wa_answer', 'correct_answer'])
     
     return DatasetDict({
         'train': train_dataset,
@@ -396,7 +396,7 @@ def generate_task(config_pth, out_dir, task_name: str):
     config = OmegaConf.load(config_pth)
 
     tokenizer = _load_tokenizer(config)
-    dataset: DatasetDict = load_and_process_task(config, tokenizer, task_name)
+    dataset: DatasetDict = _load_and_process_task(config, tokenizer, task_name)
 
     dataset.save_to_disk(
         dataset_dict_path=out_dir,
@@ -423,8 +423,8 @@ def main():
         description='Loading from the HF hub and processing common reasoning dataset'
     )
 
-    parser.add_argument('config', required=True, help='Path to config file')
-    parser.add_argument('output', required=True, help='Path to output dir')
+    parser.add_argument('config', help='Path to config file')
+    parser.add_argument('output', help='Path to output dir')
     parser.add_argument(
         '-s', '--select', 
         choices=['BoolQ', 'PIQA', 'SIQA', 'hellaswag', 'winogrande', 'ARC-E', 'ARC-C', 'OBQA'],
