@@ -8,6 +8,8 @@ from omegaconf import OmegaConf
 import functools
 
 import sys
+import argparse
+
 
 def _get_BoolQ_instructions(example, tokenizer):
     instructions = [
@@ -345,6 +347,64 @@ def _load_tokenizer(config):
     return tokenizer
 
 
+def load_and_process_task(config, tokenizer, task_name: str):
+    dataset_loader = {
+        'BoolQ':      lambda: load_dataset('google/boolq'),
+        'PIQA':       lambda: load_dataset('ybisk/piqa', trust_remote_code=True),
+        'SIQA':       lambda: load_dataset('allenai/social_i_qa', trust_remote_code=True),
+        'hellaswag':  lambda: load_dataset("Rowan/hellaswag"),
+        'winogrande': lambda: load_dataset('allenai/winogrande', 'winogrande_debiased', trust_remote_code=True),
+        'ARC-E':      lambda: load_dataset("allenai/ai2_arc", 'ARC-Easy'),
+        'ARC-C':      lambda: load_dataset("allenai/ai2_arc", 'ARC-Challenge'),
+        'OBQA':       lambda: load_dataset("allenai/openbookqa", "main"),
+    }
+    dataset_processors = {
+        'BoolQ':      _get_BoolQ_instructions,
+        'PIQA':       _get_PIQA_instructions,
+        'SIQA':       _get_SIQA_instructions,
+        'hellaswag':  _get_hellaswag_instructions,
+        'winogrande': _get_winogrande_instructions,
+        'ARC-E':      _get_ARC_instructions,
+        'ARC-C':      _get_ARC_instructions,
+        'OBQA':       _get_OBQA_instructions
+    }
+
+    dataset = dataset_loader[task_name]()
+    processor = dataset_processors[task_name]
+
+    processor = functools.partial(
+        processor,
+        tokenizer=tokenizer,
+    )
+
+    dataset = dataset.map(
+        processor, 
+        batched=False, 
+        num_proc=config.num_proc,
+    )
+
+    train_dataset =      dataset['train'].select_columns(['task', 'text', 'text_wa_answer', 'correct_answer'])
+    validation_dataset = dataset['validation'].select_columns(['task', 'text', 'text_wa_answer', 'correct_answer'])
+    
+    return DatasetDict({
+        'train': train_dataset,
+        'validation': validation_dataset
+    })
+
+
+def generate_task(config_pth, out_dir, task_name: str):
+    config = OmegaConf.load(config_pth)
+
+    tokenizer = _load_tokenizer(config)
+    dataset: DatasetDict = load_and_process_task(config, tokenizer, task_name)
+
+    dataset.save_to_disk(
+        dataset_dict_path=out_dir,
+        max_shard_size=config.get('max_shard_size', None),
+        num_proc=config.get('num_proc', None),
+    )
+
+
 def generate(config_pth, out_dir):
     config = OmegaConf.load(config_pth)
 
@@ -359,15 +419,29 @@ def generate(config_pth, out_dir):
 
 
 def main():
-    if len(sys.argv) < 3:
-        print('Usage:')
-        print('python3 generate_common_reasoning.py confg_path.yaml output_dir')
-        exit(1)
+    parser = argparse.ArgumentParser(
+        description='Loading from the HF hub and processing common reasoning dataset'
+    )
 
-    cfg_path = sys.argv[1]
-    out_dir = sys.argv[2]
+    parser.add_argument('config', required=True, help='Path to config file')
+    parser.add_argument('output', required=True, help='Path to output dir')
+    parser.add_argument(
+        '-s', '--select', 
+        choices=['BoolQ', 'PIQA', 'SIQA', 'hellaswag', 'winogrande', 'ARC-E', 'ARC-C', 'OBQA'],
+        help='Load only one task. Tasks: BoolQ, PIQA, SIQA, hellaswag, winogrande, ARC-E, ARC-C, OBQA'
+    )
 
-    generate(config_pth=cfg_path, out_dir=out_dir)
+    args = parser.parse_args()
+    cfg_path = args.config
+    out_dir = args.output
+    task_name = args.select
+
+    if task_name is None:
+        print(f"Loading common reasoning")
+        generate(config_pth=cfg_path, out_dir=out_dir)
+    else:
+        print(f"Loading {task_name}")
+        generate_task(config_pth=cfg_path, out_dir=out_dir, task_name=task_name)
 
 
 if __name__ == '__main__':
