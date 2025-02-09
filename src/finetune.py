@@ -47,8 +47,8 @@ def get_trainer(config, model, tokenizer, train_dataset, val_dataset):
             )
         )
 
-    if config.val_ds_size:
-        if config.val_ds_seed:
+    if config.get('val_ds_size', None):
+        if config.get('val_ds_seed', None) is not None:
             val_dataset = val_dataset.shuffle(config.val_ds_seed)
         
         val_dataset = val_dataset.select(

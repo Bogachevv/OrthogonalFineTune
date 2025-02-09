@@ -2,6 +2,7 @@ import model_loader
 import data_preparation
 import eval
 import finetune
+from src.gsoft.gsoft_tmp_injector import unload_and_optionally_merge
 
 from omegaconf import OmegaConf
 from enum import Enum
@@ -22,16 +23,25 @@ def run_finetune(config, model, tokenizer, train_dataset, val_dataset):
     merge_adapters = config.adapter_config.get('merge_tuned', False)
     if merge_adapters:
         # Checking for merge support. If not supported, the exception will be raised here
-        model.merge_and_unload
+        if config.adapter_config.get('ft_strategy', '') != 'GSOFT':
+            model.merge_and_unload
 
     trainer = finetune.get_trainer(config, model, tokenizer, train_dataset, val_dataset)
     trainer.train()
 
     if merge_adapters:
-        model = model.merge_and_unload(
-            progressbar=True,
-            safe_merge=True
-        )
+        if config.adapter_config.get('ft_strategy', '') != 'GSOFT':
+            model = model.merge_and_unload(
+                progressbar=True,
+                safe_merge=True
+            )
+        else:
+            model = unload_and_optionally_merge(
+                model,
+                merge=True,
+                progressbar=True,
+                safe_merge=True
+            )
 
     model.save_pretrained(config.adapter_config.peft_pretrained_path, max_shard_size=max_shard_size)
     tokenizer.save_pretrained(config.adapter_config.peft_pretrained_path)
