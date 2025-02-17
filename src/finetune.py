@@ -3,7 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 
 import transformers
-from trl import SFTConfig, SFTTrainer
+from trl import SFTConfig, SFTTrainer, DataCollatorForCompletionOnlyLM
 
 import wandb
 from omegaconf import OmegaConf
@@ -55,6 +55,9 @@ def get_trainer(config, model, tokenizer, train_dataset, val_dataset):
             range(config.val_ds_seed)
         )
         
+    response_template = '<|start_header_id|>assistant<|end_header_id|>'
+    print(f"WARNING: Collator response_template is fixed to {response_template}")
+    collator = DataCollatorForCompletionOnlyLM(response_template, tokenizer=tokenizer)
 
     trainer = SFTTrainer(
         model=model,
@@ -63,6 +66,7 @@ def get_trainer(config, model, tokenizer, train_dataset, val_dataset):
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
         optimizer_cls_and_kwargs=optimizer_cls_and_kwargs,
+        data_collator=collator,
     )
 
     return trainer
