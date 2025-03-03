@@ -348,5 +348,5 @@ class Linear(nn.Linear, HydraLoraLayer):
         blcls = torch.zeros(1)[0].to(result)
 
 
-        return result, blcls
+        return result
 
