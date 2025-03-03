@@ -1,6 +1,7 @@
 import sys
 sys.path.append('./src')
 sys.path.append('./src/gsoft')
+sys.path.append('./src/HydraLoRA')
 
 from src.run_experimet import run
 

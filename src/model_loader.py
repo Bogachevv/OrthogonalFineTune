@@ -9,6 +9,7 @@ from transformers.modeling_utils import load_sharded_checkpoint
 from peft import get_peft_model, PeftConfig, LoraConfig, BOFTConfig, VeraConfig, PeftModel, TaskType
 
 from gsoft_tmp_injector import inject_gsoft
+from HydraLoRA import HydraLoraConfig, HydraLoraModel
 
 from omegaconf import OmegaConf
 
@@ -88,6 +89,18 @@ def _get_peft_part(config, model, ft_strategy):
 
         return model_adapter
 
+    if ft_strategy == 'HydraLoRA':
+        adapter_config = HydraLoraConfig(
+            task_type=TaskType.CAUSAL_LM,
+            inference_mode=not config.adapter_config.peft_is_trainable, 
+            **OmegaConf.to_object(config.adapter_config.HydraLoRA_config),
+        )
+        
+        model_adapter = HydraLoraModel(adapter_config, model)
+        print_num_trainable(model_adapter)
+
+        return model_adapter
+        
     if ft_strategy == 'LoRA':
         adapter_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,
