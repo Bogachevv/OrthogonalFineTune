@@ -25,7 +25,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from transformers.pytorch_utils import Conv1D
 
-from peft.utils import PeftConfig, PeftType, transpose
+# from peft.utils import PeftConfig, PeftType, transpose
+from peft.config import PeftConfig
+from peft.utils import PeftType
+from peft.utils.other import transpose
+
 
 
 @dataclass
