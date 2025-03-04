@@ -152,7 +152,7 @@ def _get_peft_part(config, model, ft_strategy):
         return model_adapter
         
     if ft_strategy == 'LoRA':
-        adapter_config = OmegaConf.to_object(config.adapter_config.LoRA_config),
+        adapter_config = OmegaConf.to_object(config.adapter_config.LoRA_config)
         freeze_args, adapter_config = _drop_freeze_args(adapter_config)
 
         adapter_config = LoraConfig(
