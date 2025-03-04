@@ -85,14 +85,14 @@ def _hash_tensor(tensor):
 
 
 @torch.no_grad()
-def _freeze_lora_A(config, model) -> int:
+def _freeze_lora_A(freeze_args, model) -> int:
     '''
         :return (int): Hashsum for lora_A tensors
     '''
     A_pattern = re.compile(r'.lora_A$')
     B_pattern = re.compile(r'.lora_B$')
-    seed = config.adapter_config.get('init_seed', 42)
-    reinit = config.adapter_config.get('reinit', False)
+    seed = freeze_args.get('init_seed', 42)
+    reinit = freeze_args.get('reinit', False)
 
     adapter_hash = 0
     torch.manual_seed(seed)
@@ -127,7 +127,7 @@ def _drop_freeze_args(adapter_config) -> tuple[dict, dict]:
 
 
 def _get_peft_part(config, model, ft_strategy):
-    freeze_A = False
+    freeze_args = {}
 
     if ft_strategy == 'GSOFT':
         # TODO: Implement PEFT model instead of custom injection
@@ -154,7 +154,6 @@ def _get_peft_part(config, model, ft_strategy):
     if ft_strategy == 'LoRA':
         adapter_config = OmegaConf.to_object(config.adapter_config.LoRA_config),
         freeze_args, adapter_config = _drop_freeze_args(adapter_config)
-        freeze_A = freeze_args.get('freeze_A', False)
 
         adapter_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,
@@ -178,8 +177,9 @@ def _get_peft_part(config, model, ft_strategy):
         raise ValueError('Incorrect FT type')
 
     model_adapter = get_peft_model(model, adapter_config)
-    if freeze_A:
-        A_hash = _freeze_lora_A(config, model)
+    if freeze_args.get('freeze_A', False):
+        print(f"Freeze args: {freeze_args}")
+        A_hash = _freeze_lora_A(freeze_args, model)
         print(f"Hashsum for lora_A tensors: {A_hash}")
 
     model_adapter.print_trainable_parameters()
