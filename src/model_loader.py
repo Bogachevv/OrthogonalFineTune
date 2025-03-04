@@ -12,6 +12,7 @@ from gsoft_tmp_injector import inject_gsoft
 from HydraLoRA import HydraLoraConfig, HydraLoraModel
 
 from omegaconf import OmegaConf
+import re
 
 
 def warmup_boft():
@@ -78,7 +79,56 @@ def print_num_trainable(model):
     print(f"trainable: {trainable_params}  |  total: {total_params}  |  trainable(%): {frac:.6f}")
 
 
+@torch.no_grad()
+def _hash_tensor(tensor):
+    return hash(tuple(tensor.reshape(-1).tolist()))
+
+
+@torch.no_grad()
+def _freeze_lora_A(config, model) -> int:
+    '''
+        :return (int): Hashsum for lora_A tensors
+    '''
+    A_pattern = re.compile(r'.lora_A$')
+    B_pattern = re.compile(r'.lora_B$')
+    seed = config.adapter_config.get('init_seed', 42)
+    reinit = config.adapter_config.get('reinit', False)
+
+    adapter_hash = 0
+    torch.manual_seed(seed)
+    for layer_name, layer in model.named_modules():
+        if A_pattern.findall(layer_name):
+            if reinit:
+                # initialize A the same way as the default for nn.Linear and B to zero
+                # https://github.com/microsoft/LoRA/blob/a0a92e0f26c067cf94747bdbf1ce73793fa44d19/loralib/layers.py#L124
+                nn.init.kaiming_uniform_(layer.default.weight, a=5 ** 0.5)
+            layer.default.weight.requires_grad_(False)
+
+            layer_hash = _hash_tensor(layer.default.weight)
+            adapter_hash += layer_hash
+
+    return adapter_hash
+
+
+def _drop_freeze_args(adapter_config) -> tuple[dict, dict]:
+    '''
+        :return tuple[dict, dict]: freeze_args, adapter_config
+    '''
+    args_to_drop = ('freeze_A', 'init_seed', 'reinit')
+    freeze_args = {}
+
+    for arg in args_to_drop:
+        if arg not in adapter_config: continue
+        
+        freeze_args[arg] = adapter_config[arg]
+        del adapter_config[arg]
+
+    return freeze_args, adapter_config
+
+
 def _get_peft_part(config, model, ft_strategy):
+    freeze_A = False
+
     if ft_strategy == 'GSOFT':
         # TODO: Implement PEFT model instead of custom injection
         # adapter_config = OmegaConf.to_object(config.adapter_config.GSOFT_config)
@@ -102,10 +152,14 @@ def _get_peft_part(config, model, ft_strategy):
         return model_adapter
         
     if ft_strategy == 'LoRA':
+        adapter_config = OmegaConf.to_object(config.adapter_config.LoRA_config),
+        freeze_args, adapter_config = _drop_freeze_args(adapter_config)
+        freeze_A = freeze_args.get('freeze_A', False)
+
         adapter_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,
             inference_mode=not config.adapter_config.peft_is_trainable, 
-            **OmegaConf.to_object(config.adapter_config.LoRA_config),
+            **adapter_config,
         )
     elif ft_strategy == 'BOFT':
         warmup_boft()
@@ -123,7 +177,11 @@ def _get_peft_part(config, model, ft_strategy):
     else:
         raise ValueError('Incorrect FT type')
 
-    model_adapter = get_peft_model(model, adapter_config)    
+    model_adapter = get_peft_model(model, adapter_config)
+    if freeze_A:
+        A_hash = _freeze_lora_A(config, model)
+        print(f"Hashsum for lora_A tensors: {A_hash}")
+
     model_adapter.print_trainable_parameters()
 
     return model_adapter
@@ -136,14 +194,6 @@ def _unfreeze_layernorm(config, model):
     for name, param in model.named_parameters():
         if 'norm' in name:
             param.requires_grad = True
-
-
-# def init_bias(config, model):
-#     pass
-
-
-# def unfreeze_bias(config, model):
-#     pass
 
 
 def _get_peft_new(config, model):
