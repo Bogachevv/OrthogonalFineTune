@@ -258,7 +258,7 @@ class HydraLoraLayer(nn.Module):
         self.disable_adapters = False
 
 
-class Linear(HydraLoraLayer):
+class HydraLoRALinear(HydraLoraLayer):
     # Lora implemented in a dense layer
     def __init__(
         self,
@@ -298,20 +298,6 @@ class Linear(HydraLoraLayer):
 
             nn.init.kaiming_uniform_(self.lora_route.weight, a=math.sqrt(5))
 
-    # def train(self, mode: bool = True):
-    #     nn.Linear.train(self, mode)
-    #     self.lora_route.train(mode)
-    #     getattr(self, f"lora_A").train(mode)
-    #     for i in range(self.lora_num):
-    #         getattr(self, f"lora_B{i}").train(mode)
-
-    # def eval(self):
-    #     nn.Linear.eval(self)
-    #     self.lora_route.eval()
-    #     getattr(self, f"lora_A").eval()
-    #     for i in range(self.lora_num):
-    #         getattr(self, f"lora_B{i}").eval()
-
     def cv_squared(self, x):
         """The squared coefficient of variation of a sample.
         Useful as a loss to encourage a positive distribution to be more uniform.
@@ -341,6 +327,5 @@ class Linear(HydraLoraLayer):
 
                 for i in range(self.lora_num):
                     result = result + torch.unsqueeze(route_weight[:,:,i], -1) * getattr(self, f"lora_B{i}")(lora_A_res) * self.scaling
-
 
         return result
