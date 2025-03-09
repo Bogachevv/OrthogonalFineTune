@@ -236,7 +236,7 @@ def mark_only_lora_as_trainable(model: nn.Module, bias: str = "none") -> None:
         raise NotImplementedError
 
 
-class HydraLoraLayer:
+class HydraLoraLayer(nn.Module):
     def __init__(
         self,
         r: int,
@@ -261,6 +261,7 @@ class Linear(nn.Linear, HydraLoraLayer):
     # Lora implemented in a dense layer
     def __init__(
         self,
+        module,
         in_features: int,
         out_features: int,
         r: int = 0,
@@ -271,30 +272,24 @@ class Linear(nn.Linear, HydraLoraLayer):
         merge_weights: bool = True,
         **kwargs,
     ):
-        nn.Linear.__init__(self, in_features, out_features, **kwargs)
         HydraLoraLayer.__init__(self, r=r, lora_alpha=lora_alpha, lora_dropout=lora_dropout, merge_weights=merge_weights)
+        self.base_layer = module
 
         self.lora_num = lora_nums
-        
         self.fan_in_fan_out = fan_in_fan_out
 
         # Actual trainable parameters
         if r > 0:
-            self.lora_route = nn.Linear(in_features, self.lora_num, bias=False)
-            setattr(self, f"lora_A", nn.Linear(in_features, r, bias=False))
+            self.lora_route = nn.Linear(in_features, self.lora_num, bias=False, device=module.device)
+            setattr(self, f"lora_A", nn.Linear(in_features, r, bias=False, device=module.device))
             for i in range(self.lora_num):
-                setattr(self, f"lora_B{i}", nn.Linear(r, out_features, bias=False))
+                setattr(self, f"lora_B{i}", nn.Linear(r, out_features, bias=False, device=module.device))
 
             self.scaling = self.lora_alpha / self.r
-            # Freezing the pre-trained weight matrix
-            self.weight.requires_grad = False
-        self.reset_parameters()
-        if fan_in_fan_out:
-            self.weight.data = self.weight.data.T
 
-    def reset_parameters(self):
-        nn.Linear.reset_parameters(self)
-        
+        self.reset_parameters()
+
+    def reset_parameters(self):       
         if hasattr(self, "lora_A"):
             nn.init.kaiming_uniform_(getattr(self, f"lora_A").weight, a=math.sqrt(5))
             for i in range(self.lora_num):
@@ -302,19 +297,19 @@ class Linear(nn.Linear, HydraLoraLayer):
 
             nn.init.kaiming_uniform_(self.lora_route.weight, a=math.sqrt(5))
 
-    def train(self, mode: bool = True):
-        nn.Linear.train(self, mode)
-        self.lora_route.train(mode)
-        getattr(self, f"lora_A").train(mode)
-        for i in range(self.lora_num):
-            getattr(self, f"lora_B{i}").train(mode)
+    # def train(self, mode: bool = True):
+    #     nn.Linear.train(self, mode)
+    #     self.lora_route.train(mode)
+    #     getattr(self, f"lora_A").train(mode)
+    #     for i in range(self.lora_num):
+    #         getattr(self, f"lora_B{i}").train(mode)
 
-    def eval(self):
-        nn.Linear.eval(self)
-        self.lora_route.eval()
-        getattr(self, f"lora_A").eval()
-        for i in range(self.lora_num):
-            getattr(self, f"lora_B{i}").eval()
+    # def eval(self):
+    #     nn.Linear.eval(self)
+    #     self.lora_route.eval()
+    #     getattr(self, f"lora_A").eval()
+    #     for i in range(self.lora_num):
+    #         getattr(self, f"lora_B{i}").eval()
 
     def cv_squared(self, x):
         """The squared coefficient of variation of a sample.
@@ -337,16 +332,14 @@ class Linear(nn.Linear, HydraLoraLayer):
             result = F.linear(x, transpose(self.weight, self.fan_in_fan_out), bias=self.bias)
             raise ImportError(":(") 
         elif self.r > 0 and not self.merged:
-            result = F.linear(x, transpose(self.weight, self.fan_in_fan_out), bias=self.bias)
+            result = self.base_layer(x)
             
             if self.r > 0:
                 route_weight = nn.functional.softmax(self.lora_route(x), dim=-1, dtype=torch.float32).to(result.dtype)
+                lora_A_res = getattr(self, f"lora_A")(self.lora_dropout(x))
 
                 for i in range(self.lora_num):
-                    result = result + torch.unsqueeze(route_weight[:,:,i], -1) * getattr(self, f"lora_B{i}")(getattr(self, f"lora_A")(self.lora_dropout(x))) * self.scaling
-
-        blcls = torch.zeros(1)[0].to(result)
+                    result = result + torch.unsqueeze(route_weight[:,:,i], -1) * getattr(self, f"lora_B{i}")(lora_A_res) * self.scaling
 
 
         return result
-
