@@ -244,6 +244,7 @@ class HydraLoraLayer(nn.Module):
         lora_dropout: float,
         merge_weights: bool,
     ):
+        super().__init__()
         self.r = r
         self.lora_alpha = lora_alpha
         # Optional dropout
@@ -257,7 +258,7 @@ class HydraLoraLayer(nn.Module):
         self.disable_adapters = False
 
 
-class Linear(nn.Linear, HydraLoraLayer):
+class Linear(HydraLoraLayer):
     # Lora implemented in a dense layer
     def __init__(
         self,
