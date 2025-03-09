@@ -262,7 +262,7 @@ class Linear(HydraLoraLayer):
     # Lora implemented in a dense layer
     def __init__(
         self,
-        module,
+        module: nn.Linear,
         in_features: int,
         out_features: int,
         r: int = 0,
@@ -281,10 +281,10 @@ class Linear(HydraLoraLayer):
 
         # Actual trainable parameters
         if r > 0:
-            self.lora_route = nn.Linear(in_features, self.lora_num, bias=False, device=module.device)
-            setattr(self, f"lora_A", nn.Linear(in_features, r, bias=False, device=module.device))
+            self.lora_route = nn.Linear(in_features, self.lora_num, bias=False, device=module.weight.device)
+            setattr(self, f"lora_A", nn.Linear(in_features, r, bias=False, device=module.weight.device))
             for i in range(self.lora_num):
-                setattr(self, f"lora_B{i}", nn.Linear(r, out_features, bias=False, device=module.device))
+                setattr(self, f"lora_B{i}", nn.Linear(r, out_features, bias=False, device=module.weight.device))
 
             self.scaling = self.lora_alpha / self.r
 
