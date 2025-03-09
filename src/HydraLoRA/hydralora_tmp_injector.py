@@ -77,24 +77,3 @@ def inject_hydralora(hydralora_config, model):
     
     print_num_trainable(model_adapter)
     return model_adapter
-
-
-# def unload_and_optionally_merge(
-#     model,
-#     merge=True,
-#     progressbar: bool = False,
-#     safe_merge: bool = False,
-# ):
-#     desc = "Unloading " + ("and merging " if merge else "") + "model"
-#     named_modules = list(filter(
-#         lambda p: isinstance(p[1], GSOFTLinear),
-#         model.named_modules()
-#     ))
-
-#     for name, gs_linear in tqdm.tqdm(named_modules, disable=not progressbar, desc=desc):
-#         parent, target, target_name = _get_submodules(model, name)
-        
-#         new_module = gs_linear.merge() if merge else gs_linear.pre_layer
-#         set_layer(parent, target_name, new_module)
-
-#     return model
